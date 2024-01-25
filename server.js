@@ -387,12 +387,13 @@ app.post('/orders', (req, res) => {
   });
 });
 
+
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
-  const { product_id, quantity, status } = req.body;
+  const { status } = req.body;
 
-  // Обновление данных в таблице Orders и Order_Lines
+  // Обновление данных в таблице Orders
   const queryOrder = 'UPDATE Orders SET status_id=? WHERE id=?';
   db.run(queryOrder, [status, orderId], function (err) {
     if (err) {
@@ -401,24 +402,13 @@ app.put('/orders/:id', (req, res) => {
       return;
     }
 
-    // Обновление данных в таблице Order_Lines
-    const queryOrderLine = 'UPDATE Order_Lines SET product_id=?, quantity=? WHERE order_id=?';
-    db.run(queryOrderLine, [product_id, quantity, orderId], function (err) {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-        return;
-      }
-
-      if (this.changes > 0) {
-        res.json({ changes: this.changes });
-      } else {
-        res.status(500).json({ error: 'No changes made' });
-      }
-    });
+    if (this.changes > 0) {
+      res.json({ changes: this.changes });
+    } else {
+      res.status(500).json({ error: 'No changes made' });
+    }
   });
 });
-
 
 
 // Удаление данных из таблицы Orders по order_number
