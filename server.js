@@ -155,7 +155,7 @@ function saveEdit() {
 
 // Получение всех продуктов
 app.get('/products', (req, res) => {
-  db.all('SELECT id, name, price, color_primary, color_light, description, image_resource, category_id FROM Products', (err, rows) => {
+  db.all('SELECT id, name, price, color_primary, color_light, description, image_resource, quantity, category_id FROM Products', (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -175,7 +175,7 @@ app.get('/products', (req, res) => {
 // Получение продуктов по категории
 app.get('/products/category/:category_id', (req, res) => {
   const categoryId = req.params.category_id;
-  const query = 'SELECT id, name, price, color_primary, color_light, description, image_resource, category_id FROM Products WHERE category_id = ?';
+  const query = 'SELECT id, name, price, color_primary, color_light, description, image_resource, quantity, category_id FROM Products WHERE category_id = ?';
 
   db.all(query, [categoryId], (err, rows) => {
     if (err) {
