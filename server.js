@@ -181,8 +181,6 @@ app.get('/products/category/:category_id', (req, res) => {
 
 
 
-
-
 // Добавление продукта
 app.post('/products', (req, res) => {
   const { name, price, color_primary, color_light, description, category_id } = req.body;
