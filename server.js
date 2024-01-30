@@ -155,7 +155,7 @@ function saveEdit() {
 
 // Получение всех продуктов
 app.get('/products', (req, res) => {
-  db.all('SELECT id, name, price, color_primary, color_light, description, image_resource, quantity, category_id FROM Products', (err, rows) => {
+  db.all('SELECT id, name, price, color_primary, color_light, description, image_resource, quantity, barcode, category_id FROM Products', (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
