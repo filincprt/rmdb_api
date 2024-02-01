@@ -196,14 +196,14 @@ app.get('/products/category/:category_id', (req, res) => {
 
 // Добавление продукта
 app.post('/products', (req, res) => {
-  const { name, price, color_primary, color_light, description, category_id } = req.body;
+  const { name, price, color_primary, color_light, description, category_id, quantity, barcode } = req.body;
   const image_data = req.body.image_data; // Предполагается, что изображение передается в виде base64 строки
 
   // Декодирование base64 строки в бинарные данные
   const imageBuffer = Buffer.from(image_data, 'base64');
 
-  const query = 'INSERT INTO Products (name, image_resource, price, color_primary, color_light, description, category_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
-  db.run(query, [name, imageBuffer, price, color_primary, color_light, description, category_id], function (err) {
+  const query = 'INSERT INTO Products (name, image_resource, price, color_primary, color_light, description, category_id, quantity, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.run(query, [name, imageBuffer, price, color_primary, color_light, description, category_id, quantity, barcode], function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -215,14 +215,14 @@ app.post('/products', (req, res) => {
 // Редактирование продукта
 app.put('/products/:id', (req, res) => {
   const productId = req.params.id;
-  const { name, price, color_primary, color_light, description, category_id } = req.body;
+  const { name, price, color_primary, color_light, description, category_id, quantity, barcode } = req.body;
   const image_data = req.body.image_data;
 
   // Декодирование base64 строки в бинарные данные
   const imageBuffer = Buffer.from(image_data, 'base64');
 
-  const query = 'UPDATE Products SET name=?, image_resource=?, price=?, color_primary=?, color_light=?, description=?, category_id=? WHERE id=?';
-  db.run(query, [name, imageBuffer, price, color_primary, color_light, description, category_id, productId], function (err) {
+  const query = 'UPDATE Products SET name=?, image_resource=?, price=?, color_primary=?, color_light=?, description=?, category_id=?, quantity=?, barcode=? WHERE id=?';
+  db.run(query, [name, imageBuffer, price, color_primary, color_light, description, category_id, quantity, barcode, productId], function (err) {
     if (err) {
       console.error(err);
       res.status(500).json({ error: err.message });
@@ -235,6 +235,7 @@ app.put('/products/:id', (req, res) => {
     }
   });
 });
+
 
 // Удаление продукта
 app.delete('/products/:id', (req, res) => {
