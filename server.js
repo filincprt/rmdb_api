@@ -153,8 +153,15 @@ function saveEdit() {
 
 //---------------------PRODUCTS----------------------
 
+// Получение всех товаров с названиями категорий
 app.get('/products', (req, res) => {
-  db.all('SELECT id, name, price, color_primary, color_light, description, image_resource, quantity, barcode, category_id FROM Products', (err, rows) => {
+  const query = `
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.barcode, P.category_id, C.nameCategory as category_name
+    FROM Products P
+    LEFT JOIN Category C ON P.category_id = C.id
+  `;
+
+  db.all(query, (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -170,11 +177,15 @@ app.get('/products', (req, res) => {
   });
 });
 
-
-// Получение продуктов по категории
+// Получение товаров по категории с названиями категорий
 app.get('/products/category/:category_id', (req, res) => {
   const categoryId = req.params.category_id;
-  const query = 'SELECT id, name, price, color_primary, color_light, description, image_resource, quantity, category_id FROM Products WHERE category_id = ?';
+  const query = `
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.category_id, C.nameCategory as category_name
+    FROM Products P
+    LEFT JOIN Category C ON P.category_id = C.id
+    WHERE P.category_id = ?
+  `;
 
   db.all(query, [categoryId], (err, rows) => {
     if (err) {
@@ -191,6 +202,7 @@ app.get('/products/category/:category_id', (req, res) => {
     res.json({ products: productsWithImageData });
   });
 });
+
 
 
 
