@@ -9,26 +9,30 @@ const port = 3000;
 
 const secretKey = 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq';
 
-app.get('/api/protected', verifyToken, (req, res) => {
-    res.json({ message: 'Protected API endpoint accessed successfully' });
-});
+// Middleware для верификации JWT
+const verifyToken = (req, res, next) => {
+  const token = req.headers['authorization'];
 
-function verifyToken(req, res, next) {
-    const token = req.headers['authorization'];
+  if (!token) {
+    return res.status(403).json({ message: 'Отсутствует токен авторизации' });
+  }
 
-    if (!token) {
-        return res.status(403).json({ error: 'Token not provided' });
+  jwt.verify(token, secretKey, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: 'Неверный токен авторизации' });
     }
 
-    jwt.verify(token, secretKey, (err, decoded) => {
-        if (err) {
-            return res.status(401).json({ error: 'Invalid token' });
-        }
+    // Расширяем объект запроса с данными пользователя
+    req.user = decoded;
+    next();
+  });
+};
 
-        req.user = decoded;
-        next();
-    });
-}
+// Пример использования middleware в вашем коде
+app.get('/secure-endpoint', verifyToken, (req, res) => {
+  // Если middleware прошел успешно, можно использовать req.user для доступа к данным пользователя
+  res.json({ message: 'Запрос авторизован', user: req.user });
+});
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -362,6 +366,7 @@ app.post('/admin/login', async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, row.password_hash);
 
     if (isValidPassword) {
+        const token = jwt.sign({ username }, secretKey, { expiresIn: '1h' });
       res.json({ message: 'Authentication successful' });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
