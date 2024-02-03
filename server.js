@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors')
 const port = 3000;
 
-const secretKey = 'your_secret_key';
+const secretKey = 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq';
 
 app.get('/api/protected', verifyToken, (req, res) => {
     res.json({ message: 'Protected API endpoint accessed successfully' });
