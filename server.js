@@ -8,8 +8,7 @@ const port = 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
 // Подключение к базе данных SQLite
 
 const db = new sqlite3.Database("./DATABASE_IS_SERVER.db");
