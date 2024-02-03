@@ -11,15 +11,6 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json({ limit: '50mb' }));
 
-function generateToken(username) {
-  const payload = { username };
-  const secretKey = 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq'; // Замените на свой секретный ключ
-  const options = { expiresIn: '1h' };
-
-  return jwt.sign(payload, secretKey, options);
-}
-
-
 const db = new sqlite3.Database("./DATABASE_IS_SERVER.db");
  // Путь к вашей базе данных
 
@@ -163,7 +154,7 @@ function saveEdit() {
 //---------------------PRODUCTS----------------------
 
 // Получение всех товаров с названиями категорий
-app.get('/products', authenticateToken, (req, res) => {
+app.get('/products', (req, res) => {
   const query = `
     SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.barcode, P.category_id, C.nameCategory as category_name
     FROM Products P
@@ -366,6 +357,15 @@ app.post('/admin/login', async (req, res) => {
     next();
   });
 }
+
+  function generateToken(username) {
+  const payload = { username };
+  const secretKey = 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq'; // Замените на свой секретный ключ
+  const options = { expiresIn: '1h' };
+
+  return jwt.sign(payload, secretKey, options);
+}
+
 
 
 
