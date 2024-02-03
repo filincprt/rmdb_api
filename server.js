@@ -7,36 +7,18 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors')
 const port = 3000;
 
-const secretKey = 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq';
-
-// Middleware для верификации JWT
-const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization'];
-
-  if (!token) {
-    return res.status(403).json({ message: 'Отсутствует токен авторизации' });
-  }
-
-  jwt.verify(token, secretKey, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: 'Неверный токен авторизации' });
-    }
-
-    // Расширяем объект запроса с данными пользователя
-    req.user = decoded;
-    next();
-  });
-};
-
-// Пример использования middleware в вашем коде
-app.get('/secure-endpoint', verifyToken, (req, res) => {
-  // Если middleware прошел успешно, можно использовать req.user для доступа к данным пользователя
-  res.json({ message: 'Запрос авторизован', user: req.user });
-});
-
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json({ limit: '50mb' }));
+
+function generateToken(username) {
+  const payload = { username };
+  const secretKey = 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq'; // Замените на свой секретный ключ
+  const options = { expiresIn: '1h' };
+
+  return jwt.sign(payload, secretKey, options);
+}
+
 
 const db = new sqlite3.Database("./DATABASE_IS_SERVER.db");
  // Путь к вашей базе данных
@@ -181,7 +163,7 @@ function saveEdit() {
 //---------------------PRODUCTS----------------------
 
 // Получение всех товаров с названиями категорий
-app.get('/products', (req, res) => {
+app.get('/products', authenticateToken, (req, res) => {
   const query = `
     SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.barcode, P.category_id, C.nameCategory as category_name
     FROM Products P
@@ -365,14 +347,26 @@ app.post('/admin/login', async (req, res) => {
     // Проверка пароля
     const isValidPassword = await bcrypt.compare(password, row.password_hash);
 
-    if (isValidPassword) {
-        const token = jwt.sign({ username }, secretKey, { expiresIn: '1h' });
-      res.json({ message: 'Authentication successful' });
-    } else {
-      res.status(401).json({ error: 'Invalid credentials' });
-    }
-  });
+     if (isValidPassword) {
+    const token = generateToken(username);
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
 });
+
+  function authenticateToken(req, res, next) {
+  const token = req.header('Authorization');
+
+  if (!token) return res.sendStatus(401);
+
+  jwt.verify(token, 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq', (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
+
 
 
 //----------------------ORDERS-----------------------------
