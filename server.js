@@ -338,35 +338,13 @@ app.post('/admin/login', async (req, res) => {
     // Проверка пароля
     const isValidPassword = await bcrypt.compare(password, row.password_hash);
 
-     if (isValidPassword) {
-    const token = generateToken(username);
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
-  }
-});
-
-  function authenticateToken(req, res, next) {
-  const token = req.header('Authorization');
-
-  if (!token) return res.sendStatus(401);
-
-  jwt.verify(token, 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq', (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
+    if (isValidPassword) {
+      res.json({ message: 'Authentication successful' });
+    } else {
+      res.status(401).json({ error: 'Invalid credentials' });
+    }
   });
-}
-
-  function generateToken(username) {
-  const payload = { username };
-  const secretKey = 'op7qS8nlCdNxdEehp0YkOHWTbwg7qOHKwYirZ8LNWy57irTOC1ulmlDx7ziP9wnq'; // Замените на свой секретный ключ
-  const options = { expiresIn: '1h' };
-
-  return jwt.sign(payload, secretKey, options);
-}
-
-
+});
 
 
 //----------------------ORDERS-----------------------------
@@ -497,4 +475,111 @@ app.delete('/orders/:order_number', (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
-});
+});. using ProductManager.classes.models;
+using ProductManager.classes.objects;
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+
+namespace ProductManager
+{
+    public partial class MainWindow : Window
+    {
+        private const string ServerUrl = "https://rmdb-i5cl.onrender.com";
+
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        private async void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+                 string username = UsernameTextBox.Text;
+                 string password = PasswordBox.Password;
+
+                 if (!IsInternetAvailable())
+                 {
+                     ResultTextBlock.Visibility = Visibility.Visible;
+                     ResultTextBlock.Text = "Отсутствует подключение к интернету. Проверьте соединение и повторите попытку.";
+                     ResultTextBlock.Foreground = Brushes.Red;
+                     await Task.Delay(5000);
+                     ResultTextBlock.Visibility = Visibility.Collapsed;
+                     ResultTextBlock.Text = "";
+                     return;
+                 }
+
+                 bool isAuthenticated = await AuthenticateAdmin(username, password);
+
+                 if (isAuthenticated)
+                 {
+                     ResultTextBlock.Visibility = Visibility.Visible;
+                     ResultTextBlock.Text = "Успешная аутентификация!";
+                     ResultTextBlock.Foreground = Brushes.Green;
+                     ResultTextBlock.Visibility = Visibility.Collapsed;
+                     ViewModelString viewModel = new ViewModelString();
+
+                     Admin loggedInAdmin = new Admin { Username = username };
+
+                     viewModel.CurrentAdmin = loggedInAdmin;
+
+                     WindowMain windowMain = new WindowMain();
+                     windowMain.Show();
+                     this.Close();
+                 }
+                 else
+                 {
+                     ResultTextBlock.Visibility = Visibility.Visible;
+                     ResultTextBlock.Text = "Ошибка входа! Проверьте логин и пароль.";
+                     ResultTextBlock.Foreground = Brushes.Red;
+                     await Task.Delay(5000);
+                     ResultTextBlock.Visibility = Visibility.Collapsed;
+                     ResultTextBlock.Text = "";
+                 } 
+
+         /*   WindowMain windowMain = new WindowMain();
+            windowMain.Show();
+            this.Close();*/
+        }
+
+
+        private bool IsInternetAvailable()
+        {
+            try
+            {
+                using (var client = new WebClient())
+                using (client.OpenRead("http://www.ya.ru"))
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
+        private async Task<bool> AuthenticateAdmin(string username, string password)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    HttpResponseMessage response = await client.PostAsync($"{ServerUrl}/admin/login", new StringContent($"{{\"username\":\"{username}\",\"password\":\"{password}\"}}", Encoding.UTF8, "application/json"));
+                    response.EnsureSuccessStatusCode();
+                    return true;
+                }
+                catch (HttpRequestException)
+                {
+                    return false;
+                }
+            }
+        }
+
+    }
+}
