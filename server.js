@@ -169,7 +169,13 @@ app.get('/products', (req, res) => {
       return;
     }
 
-    res.json({ products: rows });
+    const productsWithImageData = rows.map(product => {
+      // Конвертация бинарных данных изображения в base64 строку
+      const image_data = product.image_resource.toString('base64');
+      return { ...product, image_data };
+    });
+
+    res.json({ products: productsWithImageData });
   });
 });
 
@@ -189,41 +195,34 @@ app.get('/products/category/:category_id', (req, res) => {
       return;
     }
 
-    res.json({ products: rows });
+    const productsWithImageData = rows.map(product => {
+      // Конвертация бинарных данных изображения в base64 строку
+      const image_data = product.image_resource.toString('base64');
+      return { ...product, image_data };
+    });
+
+    res.json({ products: productsWithImageData });
   });
 });
 
+
+
+
 // Добавление продукта
 app.post('/products', (req, res) => {
-  const { name, price, color_primary, color_light, description, category_id, quantity, barcode, image_resource } = req.body;
+  const { name, price, color_primary, color_light, description, category_id, quantity, barcode } = req.body;
+  const image_data = req.body.image_data; // Предполагается, что изображение передается в виде base64 строки
+
+  // Декодирование base64 строки в бинарные данные
+  const imageBuffer = Buffer.from(image_data, 'base64');
 
   const query = 'INSERT INTO Products (name, image_resource, price, color_primary, color_light, description, category_id, quantity, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.run(query, [name, image_resource, price, color_primary, color_light, description, category_id, quantity, barcode], function (err) {
+  db.run(query, [name, imageBuffer, price, color_primary, color_light, description, category_id, quantity, barcode], function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
     }
     res.json({ id: this.lastID });
-  });
-});
-
-// Редактирование продукта
-app.put('/products/:id', (req, res) => {
-  const productId = req.params.id;
-  const { name, price, color_primary, color_light, description, category_id, quantity, barcode, image_resource } = req.body;
-
-  const query = 'UPDATE Products SET name=?, image_resource=?, price=?, color_primary=?, color_light=?, description=?, category_id=?, quantity=?, barcode=? WHERE id=?';
-  db.run(query, [name, image_resource, price, color_primary, color_light, description, category_id, quantity, barcode, productId], function (err) {
-    if (err) {
-      console.error(err);
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    if (this.changes > 0) {
-      res.json({ changes: this.changes });
-    } else {
-      res.status(500).json({ error: 'No changes made' });
-    }
   });
 });
 
