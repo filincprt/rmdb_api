@@ -3,8 +3,32 @@ const sqlite3 = require('sqlite3');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const app = express();
+const jwt = require('jsonwebtoken');
 const cors = require('cors')
 const port = 3000;
+
+const secretKey = 'your_secret_key';
+
+app.get('/api/protected', verifyToken, (req, res) => {
+    res.json({ message: 'Protected API endpoint accessed successfully' });
+});
+
+function verifyToken(req, res, next) {
+    const token = req.headers['authorization'];
+
+    if (!token) {
+        return res.status(403).json({ error: 'Token not provided' });
+    }
+
+    jwt.verify(token, secretKey, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        req.user = decoded;
+        next();
+    });
+}
 
 app.use(cors());
 app.use(bodyParser.json());
