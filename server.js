@@ -3,12 +3,39 @@ const sqlite3 = require('sqlite3');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const app = express();
+const jwt = require('jsonwebtoken');
 const cors = require('cors')
 const port = 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json({ limit: '50mb' }));
+
+
+const secretKey = 'FW7p9SUFNyX7eQkhghWyB81AXAahfOQW-etq8p9pAGm0UOkkQB9IkUHurKqWdhqlJ-Z7qrT30HAEzlWtA5IJg9ALurWrPnuAJ9\r\n20fe265bd5399ad597cc938ecc25252e00a26c908e0bfa8f26879ec39ae40c39';
+
+
+app.get('/api/protected', verifyToken, (req, res) => {
+    res.json({ message: 'Protected API endpoint accessed successfully' });
+});
+
+function verifyToken(req, res, next) {
+    const token = req.headers['authorization'];
+
+    if (!token) {
+        return res.status(403).json({ error: 'Token not provided' });
+    }
+
+    jwt.verify(token, secretKey, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        req.user = decoded;
+        next();
+    });
+}
+
 // Подключение к базе данных SQLite
 
 const db = new sqlite3.Database("./DATABASE_IS_SERVER.db");
