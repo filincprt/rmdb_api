@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const app = express();
 const cors = require('cors')
+const http = require('http').Server(app);
+const io = require('socket.io')(http); 
 const port = 3000;
 
 app.use(cors());
@@ -470,6 +472,12 @@ app.delete('/orders/:order_number', (req, res) => {
   });
 });
 
+io.on('connection', (socket) => {
+  console.log('A user connected');
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
+});
 
 // Метод GET для получения всех статусов
 app.get('/statuses', (req, res) => {
