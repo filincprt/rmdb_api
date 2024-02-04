@@ -472,21 +472,6 @@ app.delete('/orders/:order_number', (req, res) => {
   });
 });
 
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  // Обработчик события обновления заказов
-  socket.on('updateOrders', () => {
-    console.log('Orders updated');
-    // Здесь может быть логика обновления данных, если необходимо
-    io.emit('ordersUpdated'); // Отправляем уведомление всем подключенным клиентам об обновлении
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
-  });
-});
-
 // Метод GET для получения всех статусов
 app.get('/statuses', (req, res) => {
   db.all('SELECT * FROM Status', (err, rows) => {
@@ -568,6 +553,87 @@ app.delete('/statuses/:id', (req, res) => {
     }
     res.json({ message: 'Статус успешно удален' });
   });
+});
+
+
+// Получение годового отчета о продажах
+app.get('/reports/sales/yearly', async (req, res) => {
+  try {
+    const query = `
+      SELECT strftime('%Y', order_date) as year, SUM(total_sales) as total_sales
+      FROM Sales
+      GROUP BY year
+      ORDER BY year;
+    `;
+    const yearlySales = await db.all(query);
+    res.json({ yearlySales });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Получение квартального отчета о продажах
+app.get('/reports/sales/quarterly', async (req, res) => {
+  try {
+    const query = `
+      SELECT strftime('%Y', order_date) || '-Q' || strftime('%q', order_date) as quarter, SUM(total_sales) as total_sales
+      FROM Sales
+      GROUP BY quarter
+      ORDER BY quarter;
+    `;
+    const quarterlySales = await db.all(query);
+    res.json({ quarterlySales });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Получение месячного отчета о продажах
+app.get('/reports/sales/monthly', async (req, res) => {
+  try {
+    const query = `
+      SELECT strftime('%Y-%m', order_date) as month, SUM(total_sales) as total_sales
+      FROM Sales
+      GROUP BY month
+      ORDER BY month;
+    `;
+    const monthlySales = await db.all(query);
+    res.json({ monthlySales });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Получение дневного отчета о продажах
+app.get('/reports/sales/daily', async (req, res) => {
+  try {
+    const query = `
+      SELECT strftime('%Y-%m-%d', order_date) as day, SUM(total_sales) as total_sales
+      FROM Sales
+      GROUP BY day
+      ORDER BY day;
+    `;
+    const dailySales = await db.all(query);
+    res.json({ dailySales });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Получение отчета о потребностях в закупках товаров
+app.get('/reports/inventory', async (req, res) => {
+  try {
+    const query = `
+      SELECT product_id, SUM(quantity_sold) as total_quantity_sold, (SELECT quantity FROM Inventory WHERE product_id = s.product_id) as current_inventory
+      FROM Sales s
+      GROUP BY product_id
+      ORDER BY product_id;
+    `;
+    const inventoryReport = await db.all(query);
+    res.json({ inventoryReport });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 
