@@ -584,7 +584,16 @@ app.post('/products/increment/:barcode', (req, res) => {
     }
 
     if (this.changes > 0) {
-      res.json({ message: 'Количество товара увеличено на 1' });
+      // Получение информации о товаре после увеличения
+      const queryGetProduct = 'SELECT * FROM Products WHERE barcode = ?';
+      db.get(queryGetProduct, [barcode], (err, row) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+
+        res.json({ message: 'Количество товара увеличено на 1', product: row });
+      });
     } else {
       res.status(404).json({ message: 'Товар не найден по указанному штрих-коду' });
     }
@@ -617,13 +626,23 @@ app.delete('/products/decrement/:barcode', (req, res) => {
           return;
         }
 
-        res.json({ message: 'Количество товара уменьшено на 1' });
+        // Получение информации о товаре после уменьшения
+        const queryGetProduct = 'SELECT * FROM Products WHERE barcode = ?';
+        db.get(queryGetProduct, [barcode], (err, row) => {
+          if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+          }
+
+          res.json({ message: 'Количество товара уменьшено на 1', product: row });
+        });
       });
     } else {
       res.status(400).json({ message: 'Количество товара уже равно 0' });
     }
   });
 });
+
 
 
 
