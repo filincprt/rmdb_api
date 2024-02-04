@@ -571,6 +571,62 @@ app.delete('/statuses/:id', (req, res) => {
 });
 
 
+// Добавление 1 единицы к количеству товара по штрих-коду
+app.post('/products/increment/:barcode', (req, res) => {
+  const barcode = req.params.barcode;
+
+  // Увеличение количества товара на 1
+  const queryIncrement = 'UPDATE Products SET quantity = quantity + 1 WHERE barcode = ?';
+  db.run(queryIncrement, [barcode], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    if (this.changes > 0) {
+      res.json({ message: 'Количество товара увеличено на 1' });
+    } else {
+      res.status(404).json({ message: 'Товар не найден по указанному штрих-коду' });
+    }
+  });
+});
+
+// Удаление 1 единицы из количества товара по штрих-коду
+app.delete('/products/decrement/:barcode', (req, res) => {
+  const barcode = req.params.barcode;
+
+  // Проверка, что количество товара больше 0 перед уменьшением
+  const queryCheckQuantity = 'SELECT quantity FROM Products WHERE barcode = ?';
+  db.get(queryCheckQuantity, [barcode], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    if (!row) {
+      res.status(404).json({ message: 'Товар не найден по указанному штрих-коду' });
+      return;
+    }
+
+    if (row.quantity > 0) {
+      // Уменьшение количества товара на 1
+      const queryDecrement = 'UPDATE Products SET quantity = quantity - 1 WHERE barcode = ?';
+      db.run(queryDecrement, [barcode], function (err) {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+
+        res.json({ message: 'Количество товара уменьшено на 1' });
+      });
+    } else {
+      res.status(400).json({ message: 'Количество товара уже равно 0' });
+    }
+  });
+});
+
+
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
