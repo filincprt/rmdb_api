@@ -471,6 +471,89 @@ app.delete('/orders/:order_number', (req, res) => {
 });
 
 
+// Метод GET для получения всех статусов
+app.get('/statuses', (req, res) => {
+  db.all('SELECT * FROM Status', (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({ statuses: rows });
+  });
+});
+
+// Метод GET для получения конкретного статуса по ID
+app.get('/statuses/:id', (req, res) => {
+  const statusId = req.params.id;
+  db.get('SELECT * FROM Status WHERE id = ?', [statusId], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (!row) {
+      res.status(404).json({ message: 'Статус не найден' });
+      return;
+    }
+    res.json({ status: row });
+  });
+});
+
+// Метод POST для добавления нового статуса
+app.post('/statuses', (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    res.status(400).json({ message: 'Поле "name" обязательно' });
+    return;
+  }
+
+  db.run('INSERT INTO Status (name) VALUES (?)', [name], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({ id: this.lastID, name });
+  });
+});
+
+// Метод PUT для обновления статуса по ID
+app.put('/statuses/:id', (req, res) => {
+  const statusId = req.params.id;
+  const { name } = req.body;
+  if (!name) {
+    res.status(400).json({ message: 'Поле "name" обязательно' });
+    return;
+  }
+
+  db.run('UPDATE Status SET name = ? WHERE id = ?', [name, statusId], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (this.changes === 0) {
+      res.status(404).json({ message: 'Статус не найден' });
+      return;
+    }
+    res.json({ id: statusId, name });
+  });
+});
+
+// Метод DELETE для удаления статуса по ID
+app.delete('/statuses/:id', (req, res) => {
+  const statusId = req.params.id;
+
+  db.run('DELETE FROM Status WHERE id = ?', [statusId], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (this.changes === 0) {
+      res.status(404).json({ message: 'Статус не найден' });
+      return;
+    }
+    res.json({ message: 'Статус успешно удален' });
+  });
+});
+
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
