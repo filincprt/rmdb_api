@@ -385,43 +385,27 @@ app.get('/orders/:id', (req, res) => {
 });
 
 // Добавление данных в таблицу Orders
-// Добавление данных в таблицу Order_Lines и обновление таблиц Sales и Inventory
-app.post('/orders', async (req, res) => {
+app.post('/orders', (req, res) => {
   const { user_id, product_id, quantity, order_number, delivery_time, status_id } = req.body;
+  const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id) VALUES (?, ?, ?, ?)';
+  db.run(queryOrder, [user_id, order_number, delivery_time, status_id], function (err) {
+      if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+      }
 
-  try {
-    // Начало транзакции
-    await db.run('BEGIN TRANSACTION');
+      const orderId = this.lastID;
+      const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+      db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+          if (err) {
+              res.status(500).json({ error: err.message });
+              return;
+          }
 
-    // Добавление данных в таблицу Orders
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id) VALUES (?, ?, ?, ?)';
-    const orderResult = await db.run(queryOrder, [user_id, order_number, delivery_time, status_id]);
-
-    const orderId = orderResult.lastID;
-
-    // Добавление данных в таблицу Order_Lines
-    const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-    await db.run(queryOrderLine, [orderId, product_id, quantity]);
-
-    // Обновление таблицы Sales
-    const querySales = 'INSERT INTO Sales (order_date, total_sales, quantity_sold, product_id) VALUES (datetime("now"), (SELECT price FROM Products WHERE id = ?) * ?, ?, ?)';
-    await db.run(querySales, [product_id, quantity, quantity, product_id]);
-
-    // Обновление таблицы Inventory
-    const queryInventory = 'INSERT INTO Inventory (product_id, quantity) VALUES (?, ?)';
-    await db.run(queryInventory, [product_id, -quantity]);
-
-    // Коммит транзакции
-    await db.run('COMMIT');
-
-    res.json({ id: orderId });
-  } catch (err) {
-    // Откат транзакции в случае ошибки
-    await db.run('ROLLBACK');
-    res.status(500).json({ error: err.message });
-  }
+          res.json({ id: orderId });
+      });
+  });
 });
-
 
 
 // Редактирование данных в таблице Orders
@@ -485,6 +469,21 @@ app.delete('/orders/:order_number', (req, res) => {
               res.json({ deleted: this.changes });
           });
       });
+  });
+});
+
+io.on('connection', (socket) => {
+  console.log('A user connected');
+
+  // Обработчик события обновления заказов
+  socket.on('updateOrders', () => {
+    console.log('Orders updated');
+    // Здесь может быть логика обновления данных, если необходимо
+    io.emit('ordersUpdated'); // Отправляем уведомление всем подключенным клиентам об обновлении
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
   });
 });
 
