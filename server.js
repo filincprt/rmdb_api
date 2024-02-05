@@ -473,20 +473,17 @@ app.delete('/orders/:order_number', (req, res) => {
 });
 
 
-
-
-
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
 });
 
-io.of('/productHub').on('connection', (socket) => {
+io.of('productHub').on('connection', (socket) => {
   console.log('Client connected to productHub');
 
   socket.on('updateProduct', (data) => {
-    db.run('UPDATE Products SET name = ?, price = ? WHERE id = ?', [data.name, data.price, data.id]);
+    db.run('UPDATE Products SET name = ?, quantity = ?, price = ? WHERE id = ?', [data.name, data.quantity, data.price, data.id]);
 
     io.of('/productHub').emit('productUpdated', data);
   });
@@ -495,12 +492,6 @@ io.of('/productHub').on('connection', (socket) => {
     console.log('Client disconnected from productHub');
   });
 });
-
-
-
-
-
-
 
 
 
