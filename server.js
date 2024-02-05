@@ -472,20 +472,33 @@ app.delete('/orders/:order_number', (req, res) => {
   });
 });
 
-io.on('connection', (socket) => {
-  console.log('A user connected');
 
-  // Обработчик события обновления заказов
-  socket.on('updateOrders', () => {
-    console.log('Orders updated');
-    // Здесь может быть логика обновления данных, если необходимо
-    io.emit('ordersUpdated'); // Отправляем уведомление всем подключенным клиентам об обновлении
-  });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
-  });
+
+
+
+
+const productHub = io.of('/productHub');
+
+productHub.on('connection', (socket) => {
+    console.log('A user connected to productHub');
+
+    // Добавьте обработчики событий SignalR здесь, например:
+    socket.on('updateProducts', () => {
+        console.log('Products updated');
+        productHub.emit('productsUpdated'); // Отправляем уведомление всем подключенным клиентам об обновлении
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected from productHub');
+    });
 });
+
+
+
+
+
+
 
 // Метод GET для получения всех статусов
 app.get('/statuses', (req, res) => {
