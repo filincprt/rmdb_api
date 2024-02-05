@@ -484,15 +484,16 @@ productHub.on('connection', (socket) => {
     console.log('A user connected to productHub');
 
     // Добавьте обработчики событий SignalR здесь, например:
-    socket.on('updateProducts', () => {
-        console.log('Products updated');
-        productHub.emit('productsUpdated'); // Отправляем уведомление всем подключенным клиентам об обновлении
+    socket.on('updateProduct', (products) => {
+        console.log(`Product ${products.id} updated`);
+        productHub.emit('productUpdated', products); // Отправляем уведомление всем подключенным клиентам об обновлении продукта
     });
 
     socket.on('disconnect', () => {
         console.log('User disconnected from productHub');
     });
 });
+
 
 
 
