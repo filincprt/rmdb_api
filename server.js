@@ -476,23 +476,26 @@ app.delete('/orders/:order_number', (req, res) => {
 
 
 
-
-
-const productHub = io.of('/productHub');
-
-productHub.on('connection', (socket) => {
-    console.log('A user connected to productHub');
-
-    // Добавьте обработчики событий SignalR здесь, например:
-    socket.on('updateProduct', (products) => {
-        console.log(`Product ${products.id} updated`);
-        productHub.emit('productUpdated', products); // Отправляем уведомление всем подключенным клиентам об обновлении продукта
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected from productHub');
-    });
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
 });
+
+io.of('/productHub').on('connection', (socket) => {
+  console.log('Client connected to productHub');
+
+  socket.on('updateProduct', (data) => {
+    db.run('UPDATE Products SET name = ?, price = ? WHERE id = ?', [data.name, data.price, data.id]);
+
+    io.of('/productHub').emit('productUpdated', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected from productHub');
+  });
+});
+
 
 
 
