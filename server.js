@@ -204,7 +204,28 @@ app.get('/products/category/:category_id', (req, res) => {
   });
 });
 
+// Редактирование продукта
+app.put('/products/:id', (req, res) => {
+  const productId = req.params.id;
+  const { name, price, color_primary, color_light, description, category_id, quantity, barcode } = req.body;
+  const image_data = req.body.image_data; // Предполагается, что изображение передается в виде base64 строки
 
+  // Декодирование base64 строки в бинарные данные
+  const imageBuffer = Buffer.from(image_data, 'base64');
+
+  const query = `
+    UPDATE Products 
+    SET name=?, image_resource=?, price=?, color_primary=?, color_light=?, description=?, category_id=?, quantity=?, barcode=?
+    WHERE id=?
+  `;
+  db.run(query, [name, imageBuffer, price, color_primary, color_light, description, category_id, quantity, barcode, productId], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({ updated: this.changes });
+  });
+});
 
 
 // Добавление продукта
