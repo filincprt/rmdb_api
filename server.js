@@ -198,9 +198,11 @@ app.get('/products/:id', (req, res) => {
       res.status(404).json({ error: "Product not found" });
       return;
     }
-    res.json({ product: productWithImageData });
+
+    res.json({ product: row });
   });
 });
+
 
 
 // Получение товаров по категории с названиями категорий
