@@ -198,11 +198,6 @@ app.get('/products/:id', (req, res) => {
       res.status(404).json({ error: "Product not found" });
       return;
     }
-
-    // Конвертация бинарных данных изображения в base64 строку
-    const image_data = row.image_resource.toString('base64');
-    const productWithImageData = { ...row, image_data };
-
     res.json({ product: productWithImageData });
   });
 });
