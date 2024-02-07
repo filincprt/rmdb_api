@@ -382,16 +382,13 @@ app.post('/admin/login', async (req, res) => {
 //----------------------ORDERS-----------------------------
 
 
-// Получение всех заказов с деталями
 app.get('/orders/details', (req, res) => {
   db.all(`SELECT Orders.id, Users.first_name || ' ' || Users.last_name AS user_name,
                  Orders.order_number,
                  Orders.delivery_time,
                  Products.name AS product_name,
-                 Products.price AS product_price,
                  Order_Lines.quantity,
-                 (Products.price * Order_Lines.quantity) AS total_product_cost,
-                 ' - ' || Order_Lines.quantity || ' шт - ' || (Products.price * Order_Lines.quantity) AS product_details
+                 Status.name AS status
           FROM Users
           JOIN Orders ON Users.id = Orders.user_id
           LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
@@ -405,28 +402,103 @@ app.get('/orders/details', (req, res) => {
   });
 });
 
-
-
 // Получение заказа по ID
 app.get('/orders/:id', (req, res) => {
   const id = req.params.id;
-  db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name, Status.name AS status,
-                 Products.name AS product_name,
-                 Products.price AS product_price,
-                 Order_Lines.quantity,
-                 (Products.price * Order_Lines.quantity) AS total_product_cost,
-                 ' - ' || Order_Lines.quantity || ' шт - ' || (Products.price * Order_Lines.quantity) AS product_details
-          FROM Orders
-          JOIN Users ON Orders.user_id = Users.id
-          LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
-          LEFT JOIN Products ON Order_Lines.product_id = Products.id
-          LEFT JOIN Status ON Orders.status_id = Status.id
-          WHERE Orders.id = ?`, [id], (err, row) => {
+  db.get('SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name, Status.name AS status FROM Orders JOIN Users ON Orders.user_id = Users.id LEFT JOIN Status ON Orders.status_id = Status.id WHERE Orders.id = ?', [id], (err, row) => {
       if (err) {
           res.status(500).json({ error: err.message });
           return;
       }
       res.json({ order: row });
+  });
+});
+
+// Добавление данных в таблицу Orders
+app.post('/orders', (req, res) => {
+  const { user_id, product_id, quantity, order_number, delivery_time, status_id } = req.body;
+  const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id) VALUES (?, ?, ?, ?)';
+  db.run(queryOrder, [user_id, order_number, delivery_time, status_id], function (err) {
+      if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+      }
+
+      const orderId = this.lastID;
+      const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+      db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+          if (err) {
+              res.status(500).json({ error: err.message });
+              return;
+          }
+
+          res.json({ id: orderId });
+      });
+  });
+});
+
+
+// Редактирование данных в таблице Orders
+app.put('/orders/:id', (req, res) => {
+  const orderId = req.params.id;
+  const { status } = req.body;
+
+  // Обновление данных в таблице Orders
+  const queryOrder = 'UPDATE Orders SET status_id=? WHERE id=?';
+  db.run(queryOrder, [status, orderId], function (err) {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    if (this.changes > 0) {
+      res.json({ changes: this.changes });
+    } else {
+      res.status(500).json({ error: 'No changes made' });
+    }
+  });
+});
+
+
+// Удаление данных из таблицы Orders по order_number
+app.delete('/orders/:order_number', (req, res) => {
+  const orderNumber = req.params.order_number;
+
+  // Получение ID заказа по order_number
+  const queryOrderId = 'SELECT id FROM Orders WHERE order_number = ?';
+  db.get(queryOrderId, [orderNumber], (err, row) => {
+      if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+      }
+
+      if (!row) {
+          res.status(404).json({ error: 'Order not found' });
+          return;
+      }
+
+      const orderId = row.id;
+
+      // Удаление данных из таблицы Order_Lines
+      const queryOrderLine = 'DELETE FROM Order_Lines WHERE order_id=?';
+      db.run(queryOrderLine, [orderId], function (err) {
+          if (err) {
+              res.status(500).json({ error: err.message });
+              return;
+          }
+
+          // Удаление данных из таблицы Orders
+          const queryOrder = 'DELETE FROM Orders WHERE id=?';
+          db.run(queryOrder, [orderId], function (err) {
+              if (err) {
+                  res.status(500).json({ error: err.message });
+                  return;
+              }
+
+              res.json({ deleted: this.changes });
+          });
+      });
   });
 });
 
