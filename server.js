@@ -388,8 +388,10 @@ app.get('/orders/details', (req, res) => {
                  Orders.order_number,
                  Orders.delivery_time,
                  Products.name AS product_name,
+                 Products.price AS product_price,
                  Order_Lines.quantity,
-                 Status.name AS status
+                 (Products.price * Order_Lines.quantity) AS total_product_cost,
+                 ' - ' || Order_Lines.quantity || ' шт - ' || (Products.price * Order_Lines.quantity) AS product_details
           FROM Users
           JOIN Orders ON Users.id = Orders.user_id
           LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
@@ -403,10 +405,23 @@ app.get('/orders/details', (req, res) => {
   });
 });
 
+
+
 // Получение заказа по ID
 app.get('/orders/:id', (req, res) => {
   const id = req.params.id;
-  db.get('SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name, Status.name AS status FROM Orders JOIN Users ON Orders.user_id = Users.id LEFT JOIN Status ON Orders.status_id = Status.id WHERE Orders.id = ?', [id], (err, row) => {
+  db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name, Status.name AS status,
+                 Products.name AS product_name,
+                 Products.price AS product_price,
+                 Order_Lines.quantity,
+                 (Products.price * Order_Lines.quantity) AS total_product_cost,
+                 ' - ' || Order_Lines.quantity || ' шт - ' || (Products.price * Order_Lines.quantity) AS product_details
+          FROM Orders
+          JOIN Users ON Orders.user_id = Users.id
+          LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
+          LEFT JOIN Products ON Order_Lines.product_id = Products.id
+          LEFT JOIN Status ON Orders.status_id = Status.id
+          WHERE Orders.id = ?`, [id], (err, row) => {
       if (err) {
           res.status(500).json({ error: err.message });
           return;
