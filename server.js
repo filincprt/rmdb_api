@@ -167,13 +167,6 @@ app.get('/products', (req, res) => {
       res.status(500).json({ error: err.message });
       return;
     }
-
-    const productsWithImageData = rows.map(product => {
-      // Конвертация бинарных данных изображения в base64 строку
-      const image_data = product.image_resource.toString('base64');
-      return { ...product, image_data };
-    });
-
     res.json({ products: productsWithImageData });
   });
 });
