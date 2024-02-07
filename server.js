@@ -382,45 +382,42 @@ app.post('/admin/login', async (req, res) => {
 //----------------------ORDERS-----------------------------
 
 
-// Получение всех заказов с деталями
+// Получение всех заказов с деталями и общей стоимостью заказа
 app.get('/orders/details', (req, res) => {
-  db.all(`
-    SELECT Orders.id, Users.first_name || ' ' || Users.last_name AS user_name,
-           Orders.order_number, Orders.delivery_time,
-           Products.name AS product_name, Order_Lines.quantity,
-           Products.price * Order_Lines.quantity AS total_product_price,
-           Status.name AS status
-    FROM Users
-    JOIN Orders ON Users.id = Orders.user_id
-    LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
-    LEFT JOIN Products ON Order_Lines.product_id = Products.id
-    LEFT JOIN Status ON Orders.status_id = Status.id`, (err, rows) => {
+  db.all(`SELECT Orders.id, Users.first_name || ' ' || Users.last_name AS user_name,
+                 Orders.order_number,
+                 Orders.delivery_time,
+                 Products.name AS product_name,
+                 Order_Lines.quantity,
+                 Products.price,
+                 Status.name AS status,
+                 SUM(Products.price * Order_Lines.quantity) AS total_cost
+          FROM Users
+          JOIN Orders ON Users.id = Orders.user_id
+          LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
+          LEFT JOIN Products ON Order_Lines.product_id = Products.id
+          LEFT JOIN Status ON Orders.status_id = Status.id
+          GROUP BY Orders.id`, (err, rows) => {
       if (err) {
           res.status(500).json({ error: err.message });
           return;
       }
-      let totalOrderCost = 0;
-      rows.forEach(row => {
-          totalOrderCost += row.total_product_price;
-      });
-      res.json({ orders: rows, totalOrderCost: totalOrderCost });
+      res.json({ orders: rows });
   });
 });
 
-// Получение заказа по ID
+// Получение заказа по ID с общей стоимостью заказа
 app.get('/orders/:id', (req, res) => {
   const id = req.params.id;
-  db.get(`
-    SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name,
-           Status.name AS status,
-           SUM(Products.price * Order_Lines.quantity) AS total_order_cost
-    FROM Orders
-    JOIN Users ON Orders.user_id = Users.id
-    LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
-    LEFT JOIN Products ON Order_Lines.product_id = Products.id
-    LEFT JOIN Status ON Orders.status_id = Status.id
-    WHERE Orders.id = ?
-    GROUP BY Orders.id`, [id], (err, row) => {
+  db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name, Status.name AS status,
+                  SUM(Products.price * Order_Lines.quantity) AS total_cost
+          FROM Orders
+          JOIN Users ON Orders.user_id = Users.id
+          LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
+          LEFT JOIN Products ON Order_Lines.product_id = Products.id
+          LEFT JOIN Status ON Orders.status_id = Status.id
+          WHERE Orders.id = ?
+          GROUP BY Orders.id`, [id], (err, row) => {
       if (err) {
           res.status(500).json({ error: err.message });
           return;
@@ -428,6 +425,7 @@ app.get('/orders/:id', (req, res) => {
       res.json({ order: row });
   });
 });
+
 
 
 // Добавление данных в таблицу Orders
