@@ -167,7 +167,6 @@ app.get('/products', (req, res) => {
       res.status(500).json({ error: err.message });
       return;
     }
-    res.json({ products: productsWithImageData });
   });
 });
 
