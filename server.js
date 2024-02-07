@@ -168,16 +168,9 @@ app.get('/products', (req, res) => {
       return;
     }
    
-    const productsWithImageData = rows.map(product => {
-      // Конвертация бинарных данных изображения в base64 строку
-      const image_data = product.image_resource.toString('base64');
-      return { ...product, image_data };
-    });
-
-    res.json({ products: productsWithImageData });
+    res.json({ products: rows });
   });
 });
-
 
 
 // Получение данных о товаре по его ID без image_data
@@ -207,8 +200,6 @@ app.get('/products/:id', (req, res) => {
 });
 
 
-
-
 // Получение товаров по категории с названиями категорий
 app.get('/products/category/:category_id', (req, res) => {
   const categoryId = req.params.category_id;
@@ -225,31 +216,22 @@ app.get('/products/category/:category_id', (req, res) => {
       return;
     }
 
-    const productsWithImageData = rows.map(product => {
-      // Конвертация бинарных данных изображения в base64 строку
-      const image_data = product.image_resource.toString('base64');
-      return { ...product, image_data };
-    });
-
-    res.json({ products: productsWithImageData });
+    res.json({ products: rows });
   });
 });
+
 
 // Редактирование продукта
 app.put('/products/:id', (req, res) => {
   const productId = req.params.id;
   const { name, price, color_primary, color_light, description, category_id, quantity, barcode } = req.body;
-  const image_data = req.body.image_data; // Предполагается, что изображение передается в виде base64 строки
-
-  // Декодирование base64 строки в бинарные данные
-  const imageBuffer = Buffer.from(image_data, 'base64');
 
   const query = `
     UPDATE Products 
     SET name=?, image_resource=?, price=?, color_primary=?, color_light=?, description=?, category_id=?, quantity=?, barcode=?
     WHERE id=?
   `;
-  db.run(query, [name, imageBuffer, price, color_primary, color_light, description, category_id, quantity, barcode, productId], function (err) {
+  db.run(query, [name, price, color_primary, color_light, description, category_id, quantity, barcode, productId], function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -262,13 +244,9 @@ app.put('/products/:id', (req, res) => {
 // Добавление продукта
 app.post('/products', (req, res) => {
   const { name, price, color_primary, color_light, description, category_id, quantity, barcode } = req.body;
-  const image_data = req.body.image_data; // Предполагается, что изображение передается в виде base64 строки
-
-  // Декодирование base64 строки в бинарные данные
-  const imageBuffer = Buffer.from(image_data, 'base64');
 
   const query = 'INSERT INTO Products (name, image_resource, price, color_primary, color_light, description, category_id, quantity, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.run(query, [name, imageBuffer, price, color_primary, color_light, description, category_id, quantity, barcode], function (err) {
+  db.run(query, [name, price, color_primary, color_light, description, category_id, quantity, barcode], function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -290,6 +268,7 @@ app.delete('/products/:id', (req, res) => {
     res.json({ deleted: this.changes });
   });
 });
+
 
 
 
