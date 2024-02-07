@@ -178,11 +178,14 @@ app.get('/products', (req, res) => {
   });
 });
 
-// Получение данных о товаре по ID
+
+
+// Получение данных о товаре по его ID без image_data
 app.get('/products/:id', (req, res) => {
   const productId = req.params.id;
+
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.barcode, P.category_id, C.nameCategory as category_name
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.quantity, P.barcode, P.image_resource, P.category_id, C.nameCategory as category_name
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
     WHERE P.id = ?
@@ -195,13 +198,14 @@ app.get('/products/:id', (req, res) => {
     }
 
     if (!row) {
-      res.status(404).json({ error: "Product not found" });
+      res.status(404).json({ message: 'Товар не найден по указанному ID' });
       return;
     }
 
     res.json({ product: row });
   });
 });
+
 
 
 
