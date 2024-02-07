@@ -180,7 +180,6 @@ app.get('/products', (req, res) => {
 
 // Получение информации о товаре по id
 app.get('/products/:id', (req, res) => {
-  const productId = req.params.id;
   const query = `
     SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.barcode, P.category_id, C.nameCategory as category_name
     FROM Products P
@@ -188,16 +187,19 @@ app.get('/products/:id', (req, res) => {
     WHERE P.id = ?
   `;
 
-  db.get(query, [productId], (err, row) => {
+  db.all(query, (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
     }
 
-    if (!row) {
-      res.status(404).json({ error: "Product not found" });
-      return;
-    }
+    const productsWithImageData = rows.map(product => {
+      // Конвертация бинарных данных изображения в base64 строку
+      const image_data = product.image_resource.toString('base64');
+      return { ...product, image_data };
+    });
+
+    res.json({ products: productsWithImageData });
   });
 });
 
