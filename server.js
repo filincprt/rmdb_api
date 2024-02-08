@@ -199,6 +199,7 @@ app.get('/products/:id', (req, res) => {
   });
 });
 
+
 // Получение товаров по категории с названиями категорий
 app.get('/products/category/:category_id', (req, res) => {
   const categoryId = req.params.category_id;
@@ -382,14 +383,15 @@ app.post('/admin/login', async (req, res) => {
 
 
 // Получение всех заказов с деталями и общей стоимостью заказа
-// Обработчик для метода GET /orders/details
 app.get('/orders/details', (req, res) => {
   db.all(`SELECT Orders.id, Users.first_name || ' ' || Users.last_name AS user_name,
                  Orders.order_number,
                  Orders.delivery_time,
-                 SUM(Products.price * Order_Lines.quantity) AS total_order_cost,
-                 GROUP_CONCAT(Products.name, ', ') AS product_names,
-                 Status.name AS status
+                 Products.name AS product_name,
+                 Order_Lines.quantity,
+                 Products.price,
+                 Status.name AS status,
+                 SUM(Products.price * Order_Lines.quantity) AS total_cost
           FROM Users
           JOIN Orders ON Users.id = Orders.user_id
           LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
@@ -404,13 +406,11 @@ app.get('/orders/details', (req, res) => {
   });
 });
 
-// Обработчик для метода GET /orders/:id
+// Получение заказа по ID с общей стоимостью заказа
 app.get('/orders/:id', (req, res) => {
   const id = req.params.id;
-  db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name,
-                 SUM(Products.price * Order_Lines.quantity) AS total_order_cost,
-                 GROUP_CONCAT(Products.name, ', ') AS product_names,
-                 Status.name AS status
+  db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name, Status.name AS status,
+                  SUM(Products.price * Order_Lines.quantity) AS total_cost
           FROM Orders
           JOIN Users ON Orders.user_id = Users.id
           LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
@@ -425,8 +425,6 @@ app.get('/orders/:id', (req, res) => {
       res.json({ order: row });
   });
 });
-
-
 
 
 // Добавление данных в таблицу Orders
