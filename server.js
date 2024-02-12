@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const app = express();
 const cors = require('cors')
+const { google } = require('googleapis');
 const nodemailer = require('nodemailer');
 const http = require('http').Server(app);
 const io = require('socket.io')(http); 
@@ -80,9 +81,6 @@ app.post('/users/login', (req, res) => {
 
 
 
-
-const nodemailer = require('nodemailer');
-const { google } = require('googleapis');
 
 // Получение данных о вашем проекте
 const CLIENT_ID = '125144104741-mluorncos3m16nl6770e0lr9lr4itosd.apps.googleusercontent.com';
