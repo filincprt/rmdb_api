@@ -378,17 +378,22 @@ app.post('/admin/login', async (req, res) => {
   });
 });
 
- app.get('/admin/credentials', async (req, res) => {
+app.get('/admin/credentials', async (req, res) => {
   try {
-
     const query = 'SELECT username, password_hash, salt, last_login FROM AdminCredentials';
-    const data = await db.query(query);
-
-    res.json(data); // Отправляем данные в ответе
+    db.all(query, [], (err, rows) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json(rows);
+    });
   } catch (error) {
+    console.error('Server error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 //----------------------ORDERS-----------------------------
 
