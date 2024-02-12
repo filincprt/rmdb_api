@@ -125,9 +125,24 @@ function generateCode() {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
+// Функция для получения email пользователя по его идентификатору (замените на вашу собственную функцию)
 function getEmailById(userId) {
- return db.query('SELECT email FROM Users WHERE id = ?', [userId]);
+  return new Promise((resolve, reject) => {
+    const query = 'SELECT email FROM Users WHERE id = ?';
+    db.get(query, [userId], (err, row) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      if (!row) {
+        resolve(null); // Пользователь не найден
+        return;
+      }
+      resolve(row.email);
+    });
+  });
 }
+
 
 
 
