@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const app = express();
 const cors = require('cors')
+const nodemailer = require('nodemailer');
 const http = require('http').Server(app);
 const io = require('socket.io')(http); 
 const port = 3000;
@@ -76,6 +77,59 @@ app.post('/users/login', (req, res) => {
     res.json({ message: 'Login successful', user: row });
   });
 });
+
+
+
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'noreply.internet.cld.fiin@gmail.com', 
+    pass: '6wQ-4MeEff' 
+  }
+});
+
+// Метод для отправки электронной почты с кодом
+app.post('/send-code/:userId', (req, res) => {
+  const userId = req.params.userId;
+
+  const email = getEmailById(userId);
+
+  if (!email) {
+    res.status(404).json({ error: 'Пользователь с указанным идентификатором не найден' });
+    return;
+  }
+
+  const code = generateCode();
+
+  const mailOptions = {
+    from: 'yourgmail@gmail.com',
+    to: email,
+    subject: 'Код подтверждения смены пароля',
+    text: `Ваш код подтверждения: ${code}`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Ошибка отправки кода подтверждения' });
+    } else {
+      console.log('Email sent: ' + info.response);
+      res.json({ message: 'Код подтверждения отправлен на вашу почту' });
+    }
+  });
+});
+
+// Функция для генерации случайного кода
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000);
+}
+
+function getEmailById(userId) {
+ return db.query('SELECT email FROM Users WHERE id = ?', [userId]);
+}
+
+
 
 
 // Получение данных из таблицы Users
