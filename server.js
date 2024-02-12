@@ -4,8 +4,6 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const app = express();
 const cors = require('cors')
-const { google } = require('googleapis');
-const nodemailer = require('nodemailer');
 const http = require('http').Server(app);
 const io = require('socket.io')(http); 
 const port = 3000;
@@ -78,97 +76,6 @@ app.post('/users/login', (req, res) => {
     res.json({ message: 'Login successful', user: row });
   });
 });
-
-
-
-
-// Получение данных о вашем проекте
-const CLIENT_ID = '125144104741-mluorncos3m16nl6770e0lr9lr4itosd.apps.googleusercontent.com';
-const CLIENT_SECRET = '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';
-const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
-const REFRESH_TOKEN = '1//04WL-N9sY5mlkCgYIARAAGAQSNwF-L9IrzAW2N6VvA5pr2uT8DvdADkTBos-mQyGYGMZKjKzXK4pTCNxJLDtFaNDMxfT0waQmFkU'; // Вставьте ваш токен обновления
-
-// Создание OAuth 2.0 клиента
-const oauth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLIENT_SECRET,
-  REDIRECT_URI
-);
-
-// Установка токена доступа для OAuth 2.0 клиента
-oauth2Client.setCredentials({
-  refresh_token: REFRESH_TOKEN
-});
-
-// Создание транспортера для отправки электронной почты через OAuth 2.0
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    type: 'OAuth2',
-    user: 'noreply.internet.cld.fiin@gmail.com',
-    clientId: CLIENT_ID,
-    clientSecret: CLIENT_SECRET,
-    refreshToken: REFRESH_TOKEN,
-    accessToken: oauth2Client.getAccessToken(),
-    expires: 3599
-  }
-});
-
-// Метод для отправки электронной почты с кодом
-app.post('/send-code/:userId', async (req, res) => {
-  const userId = req.params.userId;
-
-  try {
-    const email = await getEmailById(userId);
-
-    if (!email) {
-      res.status(404).json({ error: 'Пользователь с указанным идентификатором не найден' });
-      return;
-    }
-
-    const code = generateCode();
-
-    const mailOptions = {
-      from: 'noreply.internet.cld.fiin@gmail.com',
-      to: email,
-      subject: 'Код подтверждения смены пароля',
-      text: `Ваш код подтверждения: ${code}`
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.response);
-    res.json({ message: 'Код подтверждения отправлен на вашу почту' });
-  } catch (error) {
-    console.error('Ошибка отправки кода подтверждения:', error);
-    res.status(500).json({ error: 'Ошибка отправки кода подтверждения' });
-  }
-});
-
-// Функция для генерации случайного кода
-function generateCode() {
-  return Math.floor(100000 + Math.random() * 900000);
-}
-
-// Функция для получения email пользователя по его идентификатору (замените на вашу собственную функцию)
-function getEmailById(userId) {
-  return new Promise((resolve, reject) => {
-    const query = 'SELECT email FROM Users WHERE id = ?';
-    db.get(query, [userId], (err, row) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      if (!row) {
-        resolve(null); // Пользователь не найден
-        return;
-      }
-      resolve(row.email);
-    });
-  });
-}
-
-
-
 
 
 // Получение данных из таблицы Users
