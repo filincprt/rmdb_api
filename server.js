@@ -429,7 +429,8 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-  const { user_id, product_id, quantity, order_number, delivery_time, status_id } = req.body;
+  const { user_id, order_number, delivery_time, status_id, order_lines } = req.body; 
+
   const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id) VALUES (?, ?, ?, ?)';
   db.run(queryOrder, [user_id, order_number, delivery_time, status_id], function (err) {
       if (err) {
@@ -439,14 +440,19 @@ app.post('/orders', (req, res) => {
 
       const orderId = this.lastID;
       const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-      db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-          if (err) {
-              res.status(500).json({ error: err.message });
-              return;
-          }
-
-          res.json({ id: orderId });
+      
+      // Добавляем каждый товар в заказ
+      order_lines.forEach(orderLine => {
+          const { product_id, quantity } = orderLine;
+          db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+              if (err) {
+                  res.status(500).json({ error: err.message });
+                  return;
+              }
+          });
       });
+
+      res.json({ id: orderId });
   });
 });
 
