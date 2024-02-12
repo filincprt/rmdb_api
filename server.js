@@ -378,6 +378,19 @@ app.post('/admin/login', async (req, res) => {
   });
 });
 
+ app.get('/admin/credentials', async (req, res) => {
+  try {
+    // Здесь выполните запрос к базе данных для получения данных о логине, пароле, соли и хэше
+
+    // Пример запроса к базе данных (замените на ваш реальный запрос)
+    const query = 'SELECT username, password, salt, hash FROM AdminCredentials';
+    const data = await db.query(query);
+
+    res.json(data); // Отправляем данные в ответе
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 //----------------------ORDERS-----------------------------
 
