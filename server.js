@@ -431,25 +431,42 @@ app.get('/orders/:id', (req, res) => {
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
   const { user_id, product_id, quantity, order_number, delivery_time, status_id } = req.body;
-  const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id) VALUES (?, ?, ?, ?)';
-  db.run(queryOrder, [user_id, order_number, delivery_time, status_id], function (err) {
-      if (err) {
-          res.status(500).json({ error: err.message });
-          return;
-      }
 
-      const orderId = this.lastID;
-      const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-      db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-          if (err) {
-              res.status(500).json({ error: err.message });
-              return;
-          }
+  // Проверить наличие достаточного количества товара на складе
+  const checkAvailabilityQuery = 'SELECT quantity FROM Products WHERE id = ?';
+  db.get(checkAvailabilityQuery, [product_id], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
 
-          res.json({ id: orderId });
-      });
+    if (!row || row.quantity < quantity) {
+      res.status(400).json({ error: 'Недостаточное количество товара на складе' });
+      return;
+    }
+
+    // Если достаточное количество товара доступно, добавить заказ
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id) VALUES (?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, order_number, delivery_time, status_id], function (err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        const orderId = this.lastID;
+        const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+        db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            res.json({ id: orderId });
+        });
+    });
   });
 });
+
 
 
 // Редактирование данных в таблице Orders
