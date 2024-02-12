@@ -81,43 +81,69 @@ app.post('/users/login', (req, res) => {
 
 
 
+const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
+
+// Получение данных о вашем проекте
+const CLIENT_ID = '125144104741-mluorncos3m16nl6770e0lr9lr4itosd.apps.googleusercontent.com';
+const CLIENT_SECRET = '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';
+const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
+const REFRESH_TOKEN = '1//04WL-N9sY5mlkCgYIARAAGAQSNwF-L9IrzAW2N6VvA5pr2uT8DvdADkTBos-mQyGYGMZKjKzXK4pTCNxJLDtFaNDMxfT0waQmFkU'; // Вставьте ваш токен обновления
+
+// Создание OAuth 2.0 клиента
+const oauth2Client = new google.auth.OAuth2(
+  CLIENT_ID,
+  CLIENT_SECRET,
+  REDIRECT_URI
+);
+
+// Установка токена доступа для OAuth 2.0 клиента
+oauth2Client.setCredentials({
+  refresh_token: REFRESH_TOKEN
+});
+
+// Создание транспортера для отправки электронной почты через OAuth 2.0
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'noreply.internet.cld.fiin@gmail.com', 
-    pass: '6wQ-4MeEff' 
+    type: 'OAuth2',
+    user: 'noreply.internet.cld.fiin@gmail.com',
+    clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
+    refreshToken: REFRESH_TOKEN,
+    accessToken: oauth2Client.getAccessToken(),
+    expires: 3599
   }
 });
 
 // Метод для отправки электронной почты с кодом
-app.post('/send-code/:userId', (req, res) => {
+app.post('/send-code/:userId', async (req, res) => {
   const userId = req.params.userId;
 
-  const email = getEmailById(userId);
+  try {
+    const email = await getEmailById(userId);
 
-  if (!email) {
-    res.status(404).json({ error: 'Пользователь с указанным идентификатором не найден' });
-    return;
-  }
-
-  const code = generateCode();
-
-  const mailOptions = {
-    from: 'yourgmail@gmail.com',
-    to: email,
-    subject: 'Код подтверждения смены пароля',
-    text: `Ваш код подтверждения: ${code}`
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Ошибка отправки кода подтверждения' });
-    } else {
-      console.log('Email sent: ' + info.response);
-      res.json({ message: 'Код подтверждения отправлен на вашу почту' });
+    if (!email) {
+      res.status(404).json({ error: 'Пользователь с указанным идентификатором не найден' });
+      return;
     }
-  });
+
+    const code = generateCode();
+
+    const mailOptions = {
+      from: 'noreply.internet.cld.fiin@gmail.com',
+      to: email,
+      subject: 'Код подтверждения смены пароля',
+      text: `Ваш код подтверждения: ${code}`
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+    res.json({ message: 'Код подтверждения отправлен на вашу почту' });
+  } catch (error) {
+    console.error('Ошибка отправки кода подтверждения:', error);
+    res.status(500).json({ error: 'Ошибка отправки кода подтверждения' });
+  }
 });
 
 // Функция для генерации случайного кода
