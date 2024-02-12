@@ -60,6 +60,24 @@ app.put('/orders/update/:id', (req, res) => {
 //---------------------USERS---------------------
 
 
+// Авторизация пользователя
+app.post('/users/login', (req, res) => {
+  const { email, password } = req.body;
+  const query = 'SELECT * FROM Users WHERE email = ? AND password = ?';
+  db.get(query, [email, password], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (!row) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+    res.json({ message: 'Login successful', user: row });
+  });
+});
+
+
 // Получение данных из таблицы Users
 app.get('/users', (req, res) => {
     db.all('SELECT * FROM Users', (err, rows) => {
