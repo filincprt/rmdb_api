@@ -224,14 +224,14 @@ app.get('/products/category/:category_id', (req, res) => {
 // Редактирование продукта
 app.put('/products/:id', (req, res) => {
   const productId = req.params.id;
-  const { name, price, color_primary, color_light, description, category_id, quantity, barcode } = req.body;
+  const { name, price, color_primary, color_light, description, category_id, quantity, barcode, image_resource } = req.body;
 
   const query = `
     UPDATE Products 
     SET name=?, image_resource=?, price=?, color_primary=?, color_light=?, description=?, category_id=?, quantity=?, barcode=?
     WHERE id=?
   `;
-  db.run(query, [name, price, color_primary, color_light, description, category_id, quantity, barcode, productId], function (err) {
+  db.run(query, [name, image_resource, price, color_primary, color_light, description, category_id, quantity, barcode, productId], function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -239,6 +239,7 @@ app.put('/products/:id', (req, res) => {
     res.json({ updated: this.changes });
   });
 });
+
 
 
 // Добавление продукта
