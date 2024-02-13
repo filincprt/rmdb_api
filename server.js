@@ -107,15 +107,20 @@ app.post('/users', (req, res) => {
         }
 
         const sql = 'INSERT INTO Users (email, password) VALUES (?, ?)';
-        db.run(sql, [email, hash], (err) => {
+        db.run(sql, [email, hash], function(err) {
             if (err) {
                 res.status(500).json({ error: 'Error adding user to database' });
                 return;
             }
-            res.json({ message: 'User added successfully' });
+
+            // Получаем идентификатор только что добавленного пользователя
+            const userId = this.lastID;
+
+            res.json({ message: 'User added successfully', userId: userId });
         });
     });
 });
+
 
 
   
