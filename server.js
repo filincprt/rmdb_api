@@ -278,8 +278,16 @@ app.post('/reset-password/verify/:userId', (req, res) => {
 
             // Проверяем, совпадает ли введенный код с сохраненным
             if (resetCode === savedResetCode) {
-                // Код верный, разрешаем пользователю сбросить пароль
-                res.json({ message: 'Верный временный код' });
+                // Удаляем код из базы данных
+                removeResetCode(userId)
+                    .then(() => {
+                        // Код верный, разрешаем пользователю сбросить пароль
+                        res.json({ message: 'Верный временный код' });
+                    })
+                    .catch(err => {
+                        console.error('Ошибка удаления временного кода из базы данных:', err);
+                        res.status(500).json({ error: 'Ошибка удаления временного кода из базы данных' });
+                    });
             } else {
                 res.status(400).json({ error: 'Неверный временный код' });
             }
@@ -289,6 +297,21 @@ app.post('/reset-password/verify/:userId', (req, res) => {
             res.status(500).json({ error: 'Ошибка получения временного кода из базы данных' });
         });
 });
+
+// Метод для удаления временного кода из базы данных
+function removeResetCode(userId) {
+    return new Promise((resolve, reject) => {
+        const query = 'UPDATE Users SET reset_code = NULL WHERE id = ?';
+        db.run(query, [userId], function (err) {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve();
+        });
+    });
+}
+
 
 // Метод для сохранения временного кода в базе данных
 function saveResetCode(userId, resetCode) {
@@ -322,18 +345,6 @@ function getResetCode(userId) {
     });
 }
 
-function removeResetCode(userId) {
-    return new Promise((resolve, reject) => {
-        const query = 'UPDATE Users SET reset_code = NULL, reset_code_expiry = NULL WHERE id = ?';
-        db.run(query, [userId], function (err) {
-            if (err) {
-                reject(err);
-                return;
-            }
-            resolve();
-        });
-    });
-}
 
 //---------------------PRODUCTS----------------------
 
