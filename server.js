@@ -62,21 +62,33 @@ app.put('/orders/update/:id', (req, res) => {
 
 
 // Авторизация пользователя
-app.post('/users/login', (req, res) => {
-  const { email, password } = req.body;
-  const query = 'SELECT * FROM Users WHERE email = ? AND password = ?';
-  db.get(query, [email, password], (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
+app.post('/users/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        // Хэшируем введенный пароль для сравнения с хэшем в базе данных
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Выбираем пользователя из базы данных по электронной почте
+        db.get('SELECT * FROM Users WHERE email = ?', [email], async (err, row) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+
+            // Проверяем, совпадают ли хэшированные пароли
+            const passwordsMatch = await bcrypt.compare(password, row.password);
+            if (!row || !passwordsMatch) {
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
+
+            // Если пароль совпадает, отправляем сообщение об успешной авторизации и информацию о пользователе
+            res.json({ message: 'Login successful', user: row });
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-    if (!row) {
-      res.status(401).json({ error: 'Invalid credentials' });
-      return;
-    }
-    res.json({ message: 'Login successful', user: row });
-  });
 });
+
 
 
 // Получение данных из таблицы Users без пароля
@@ -113,14 +125,14 @@ app.post('/users', async (req, res) => {
 
 // Обновление данных в таблице Users
 app.put('/users/:id', (req, res) => {
-  const { email, password, first_name, last_name, delivery_address } = req.body;
+  const { email, first_name, last_name, delivery_address } = req.body;
   const userId = req.params.id;
   const query = `
       UPDATE Users
       SET email = ?, password = ?, first_name = ?, last_name = ?, delivery_address = ?
       WHERE id = ?`;
 
-  db.run(query, [email, password, first_name, last_name, delivery_address, userId], function (err) {
+  db.run(query, [email, first_name, last_name, delivery_address, userId], function (err) {
       if (err) {
           res.status(500).json({ error: err.message });
           return;
