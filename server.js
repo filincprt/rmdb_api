@@ -81,7 +81,7 @@ app.post('/users/login', (req, res) => {
 
 // Получение данных из таблицы Users без пароля
 app.get('/users', (req, res) => {
-    db.all('SELECT id, email, delivery_address, created_at FROM Users', (err, rows) => {
+    db.all('SELECT id, email, delivery_address, first_name, last_name FROM Users', (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -93,13 +93,13 @@ app.get('/users', (req, res) => {
   
 // Добавление нового пользователя с хэшированным паролем
 app.post('/users', (req, res) => {
-    const { email, password, delivery_address } = req.body;
+    const { email, password, delivery_address, first_name, last_name } = req.body;
     bcrypt.hash(password, 10, (err, hash) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
-        const sql = 'INSERT INTO Users (email, password, delivery_address) VALUES (?, ?, ?, ?)';
+        const sql = 'INSERT INTO Users (email, password, delivery_address, first_name, last_name ) VALUES (?, ?, ?, ?)';
         db.run(sql, [email, hash, delivery_address], (err) => {
             if (err) {
                 res.status(500).json({ error: err.message });
