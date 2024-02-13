@@ -188,6 +188,23 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+function getEmailById(userId) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT email FROM Users WHERE id = ?';
+        db.get(query, [userId], (err, row) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            if (!row) {
+                resolve(null); // Пользователь не найден
+                return;
+            }
+            resolve(row.email);
+        });
+    });
+}
+
 // Метод для отправки письма с кодом на сброс пароля на электронную почту пользователя
 app.post('/reset-password/:userId', (req, res) => {
     const userId = req.params.userId;
