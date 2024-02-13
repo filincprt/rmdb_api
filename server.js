@@ -90,25 +90,33 @@ app.get('/users', (req, res) => {
     });
 });
 
-  
 // Добавление нового пользователя с хэшированным паролем
 app.post('/users', (req, res) => {
-    const { email, password, delivery_address, first_name, last_name } = req.body;
+    const { email, password } = req.body;
+
+    // Проверка, что оба email и password предоставлены
+    if (!email || !password) {
+        res.status(400).json({ error: 'Both email and password are required' });
+        return;
+    }
+
     bcrypt.hash(password, 10, (err, hash) => {
         if (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ error: 'Error hashing password' });
             return;
         }
-        const sql = 'INSERT INTO Users (email, password, delivery_address, first_name, last_name ) VALUES (?, ?, ?, ?)';
-        db.run(sql, [email, hash, delivery_address], (err) => {
+
+        const sql = 'INSERT INTO Users (email, password) VALUES (?, ?)';
+        db.run(sql, [email, hash], (err) => {
             if (err) {
-                res.status(500).json({ error: err.message });
+                res.status(500).json({ error: 'Error adding user to database' });
                 return;
             }
             res.json({ message: 'User added successfully' });
         });
     });
 });
+
 
   
 
