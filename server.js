@@ -221,10 +221,9 @@ app.post('/reset-password/:userId', (req, res) => {
 
             // Генерируем случайный код для сброса пароля
             const resetCode = Math.random().toString(36).substring(2, 8); // Пример: "abc123"
-            const resetCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // Два минуты с момента создания
 
-            // Сохраняем код и его срок действия в базе данных
-            saveResetCode(userId, resetCode, resetCodeExpiry)
+            // Сохраняем код в базе данных
+            saveResetCode(userId, resetCode)
                 .then(() => {
                     // Формируем текст письма с кодом сброса пароля
                     const mailOptions = {
@@ -264,56 +263,23 @@ app.post('/reset-password/:userId', (req, res) => {
         });
 });
 
-
-
-// Метод для сохранения временного кода в базе данных
-function saveResetCode(userId, resetCode, resetCodeExpiry) {
-    return new Promise((resolve, reject) => {
-        // Выполняем запрос к базе данных для сохранения кода и его срока действия
-        const query = `
-            UPDATE Users
-            SET reset_code = ?, reset_code_expiry = ?
-            WHERE id = ?`;
-        db.run(query, [resetCode, resetCodeExpiry, userId], function (err) {
-            if (err) {
-                reject(err);
-                return;
-            }
-            resolve();
-        });
-    });
-}
-
 // Метод для проверки временного кода при сбросе пароля
 app.post('/reset-password/verify/:userId', (req, res) => {
     const userId = req.params.userId;
     const { resetCode } = req.body;
 
-    // Получаем сохраненный код и его срок действия из базы данных
+    // Получаем сохраненный код из базы данных
     getResetCode(userId)
-        .then(({ savedResetCode, resetCodeExpiry }) => {
-            if (!savedResetCode || !resetCodeExpiry) {
-                res.status(404).json({ error: 'Временный код не найден или истек' });
+        .then(savedResetCode => {
+            if (!savedResetCode) {
+                res.status(404).json({ error: 'Временный код не найден' });
                 return;
             }
 
             // Проверяем, совпадает ли введенный код с сохраненным
             if (resetCode === savedResetCode) {
-                // Проверяем, не истек ли срок действия кода
-                if (new Date() < new Date(resetCodeExpiry)) {
-                    // Код верный и не истек, разрешаем пользователю сбросить пароль
-                    res.json({ message: 'Верный временный код' });
-                } else {
-                    // Срок действия кода истек, удаляем его из базы данных
-                    removeResetCode(userId)
-                        .then(() => {
-                            res.status(400).json({ error: 'Временный код истек' });
-                        })
-                        .catch(err => {
-                            console.error('Ошибка удаления истекшего временного кода:', err);
-                            res.status(500).json({ error: 'Ошибка удаления истекшего временного кода' });
-                        });
-                }
+                // Код верный, разрешаем пользователю сбросить пароль
+                res.json({ message: 'Верный временный код' });
             } else {
                 res.status(400).json({ error: 'Неверный временный код' });
             }
@@ -324,25 +290,15 @@ app.post('/reset-password/verify/:userId', (req, res) => {
         });
 });
 
-// Метод для получения временного кода из базы данных
-function getResetCode(userId) {
+// Метод для сохранения временного кода в базе данных
+function saveResetCode(userId, resetCode) {
     return new Promise((resolve, reject) => {
-        const query = 'SELECT reset_code, reset_code_expiry FROM Users WHERE id = ?';
-        db.get(query, [userId], (err, row) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            resolve({ savedResetCode: row.reset_code, resetCodeExpiry: row.reset_code_expiry });
-        });
-    });
-}
-
-// Метод для удаления временного кода из базы данных
-function removeResetCode(userId) {
-    return new Promise((resolve, reject) => {
-        const query = 'UPDATE Users SET reset_code = NULL, reset_code_expiry = NULL WHERE id = ?';
-        db.run(query, [userId], function (err) {
+        // Выполняем запрос к базе данных для сохранения кода
+        const query = `
+            UPDATE Users
+            SET reset_code = ?
+            WHERE id = ?`;
+        db.run(query, [resetCode, userId], function (err) {
             if (err) {
                 reject(err);
                 return;
@@ -352,6 +308,19 @@ function removeResetCode(userId) {
     });
 }
 
+// Метод для получения временного кода из базы данных
+function getResetCode(userId) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT reset_code FROM Users WHERE id = ?';
+        db.get(query, [userId], (err, row) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(row ? row.reset_code : null);
+        });
+    });
+}
 
 
 
