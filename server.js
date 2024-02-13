@@ -219,7 +219,7 @@ app.post('/reset-password/:userId', (req, res) => {
 
             // Генерируем случайный код для сброса пароля
             const resetCode = Math.random().toString(36).substring(2, 8); // Пример: "abc123"
-            const resetCodeExpiry = new Date(Date.now() + 2 * 60 * 1000); // Два минуты с момента создания
+            const resetCodeExpiry = new Date(Date.now() + 5 * 60 * 1000); // Два минуты с момента создания
 
             // Сохраняем код и его срок действия в базе данных
             saveResetCode(userId, resetCode, resetCodeExpiry)
