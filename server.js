@@ -200,6 +200,21 @@ const transporter = nodemailer.createTransport({
 });
 
 
+// Функция для получения идентификатора пользователя по его email
+function getUserIdByEmail(email) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT id FROM Users WHERE email = ?';
+        db.get(query, [email], (err, row) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(row ? row.id : null);
+        });
+    });
+}
+
+
 // Функция для получения email пользователя по его идентификатору
 function getEmailById(userId) {
     return new Promise((resolve, reject) => {
