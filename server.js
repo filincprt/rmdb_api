@@ -2,6 +2,7 @@ const express = require('express');
 const sqlite3 = require('sqlite3');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 const app = express();
 const cors = require('cors')
 const http = require('http').Server(app);
@@ -78,29 +79,37 @@ app.post('/users/login', (req, res) => {
 });
 
 
-// Получение данных из таблицы Users
+// Получение данных из таблицы Users без пароля
 app.get('/users', (req, res) => {
-    db.all('SELECT * FROM Users', (err, rows) => {
-      if (err) {
-        res.status(500).json({ error: err.message });
-        return;
-      }
-      res.json({ users: rows });
+    db.all('SELECT id, username, email, delivery_address, created_at FROM Users', (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ users: rows });
     });
-  });
+});
+
   
-  // Добавление данных в таблицу Users
-  app.post('/users', (req, res) => {
-    const { email, password, first_name, last_name, delivery_address } = req.body;
-    const query = 'INSERT INTO Users (email, password, first_name, last_name, delivery_address) VALUES (?, ?, ?, ?, ?)';
-    db.run(query, [email, password, first_name, last_name, delivery_address], function (err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
-        return;
-      }
-      res.json({ id: this.lastID });
+// Добавление нового пользователя с хэшированным паролем
+app.post('/users', (req, res) => {
+    const { username, email, password, delivery_address } = req.body;
+    bcrypt.hash(password, 10, (err, hash) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        const sql = 'INSERT INTO Users (username, email, password, delivery_address) VALUES (?, ?, ?, ?)';
+        db.run(sql, [username, email, hash, delivery_address], (err) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ message: 'User added successfully' });
+        });
     });
-  });
+});
+
   
 
 // Обновление данных в таблице Users
@@ -166,6 +175,83 @@ function saveEdit() {
       // Обновляем отображение пользователей
       getUsers();
   });
+}
+
+
+const transporter = nodemailer.createTransport({
+    host: 'smtp.elasticemail.com',
+    port: 2525,
+    secure: false, // true для использования SSL
+    auth: {
+        user: 'noreply.internet.cld.fiin@gmail.com',
+        pass: 'E162CDC3CDFDB5E1F36090E07FC3740E027E'
+    }
+});
+
+// Метод для отправки письма с кодом на сброс пароля на электронную почту пользователя
+app.post('/reset-password/:userId', (req, res) => {
+    const userId = req.params.userId;
+
+    // Получаем email пользователя из базы данных по его id
+    getEmailById(userId)
+        .then(email => {
+            if (!email) {
+                res.status(404).json({ error: 'Пользователь с указанным идентификатором не найден' });
+                return;
+            }
+
+            // Генерируем случайный код для сброса пароля
+            const resetCode = Math.random().toString(36).substring(2, 8); // Пример: "abc123"
+
+            // Хэшируем код сброса пароля
+            bcrypt.hash(resetCode, 10, (err, hashedCode) => {
+                if (err) {
+                    res.status(500).json({ error: 'Ошибка хэширования кода сброса пароля' });
+                    return;
+                }
+
+                // Формируем текст письма с кодом сброса пароля
+                const mailOptions = {
+                    from: 'noreply.internet.cld.fiin@gmail.com',
+                    to: email,
+                    subject: 'Сброс пароля',
+                    text: `Код для сброса пароля: ${resetCode}`
+                };
+
+                // Отправляем письмо
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error(error);
+                        res.status(500).json({ error: 'Ошибка отправки электронного письма' });
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                        res.json({ message: 'Код для сброса пароля отправлен на вашу почту' });
+                    }
+                });
+            });
+        })
+        .catch(err => {
+            console.error('Ошибка получения email пользователя из базы данных:', err);
+            res.status(500).json({ error: 'Ошибка получения email пользователя из базы данных' });
+        });
+});
+
+// Функция для получения email пользователя по его идентификатору
+function getEmailById(userId) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT email FROM Users WHERE id = ?';
+        db.get(query, [userId], (err, row) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            if (!row) {
+                resolve(null); // Пользователь не найден
+                return;
+            }
+            resolve(row.email);
+        });
+    });
 }
 
 
@@ -343,6 +429,9 @@ app.get('/categories', (req, res) => {
       res.json({ deleted: this.changes });
     });
   });
+
+
+
 
 
 //------------------------Autentifications----------------
