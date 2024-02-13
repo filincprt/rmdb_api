@@ -278,15 +278,8 @@ app.post('/reset-password/verify/:userId', (req, res) => {
 
             // Проверяем, совпадает ли введенный код с сохраненным
             if (resetCode === savedResetCode) {
-                // Код верный, удаляем его из базы данных
-                removeResetCode(userId)
-                    .then(() => {
-                        res.json({ message: 'Верный временный код' });
-                    })
-                    .catch(err => {
-                        console.error('Ошибка удаления временного кода из базы данных:', err);
-                        res.status(500).json({ error: 'Ошибка удаления временного кода из базы данных' });
-                    });
+                // Код верный, разрешаем пользователю сбросить пароль
+                res.json({ message: 'Верный временный код' });
             } else {
                 res.status(400).json({ error: 'Неверный временный код' });
             }
