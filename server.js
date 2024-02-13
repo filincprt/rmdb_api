@@ -188,6 +188,8 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+
+// Функция для получения email пользователя по его идентификатору
 function getEmailById(userId) {
     return new Promise((resolve, reject) => {
         const query = 'SELECT email FROM Users WHERE id = ?';
@@ -261,6 +263,8 @@ app.post('/reset-password/:userId', (req, res) => {
             res.status(500).json({ error: 'Ошибка получения email пользователя из базы данных' });
         });
 });
+
+
 
 // Метод для сохранения временного кода в базе данных
 function saveResetCode(userId, resetCode, resetCodeExpiry) {
