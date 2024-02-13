@@ -91,39 +91,25 @@ app.get('/users', (req, res) => {
 });
 
 // Добавление нового пользователя с хэшированным паролем
-app.post('/users', (req, res) => {
-    const { email, password } = req.body;
+app.post('/users', async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
-    // Проверка, что оба email и password предоставлены
-    if (!email || !password) {
-        res.status(400).json({ error: 'Both email and password are required' });
-        return;
-    }
+        // Хэшируем пароль
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-    bcrypt.hash(password, 10, (err, hash) => {
-        if (err) {
-            res.status(500).json({ error: 'Error hashing password' });
-            return;
-        }
-
-        const sql = 'INSERT INTO Users (email, password) VALUES (?, ?)';
-        db.run(sql, [email, hash], function(err) {
+        // Вставляем пользователя в базу данных
+        db.run(`INSERT INTO Users (email, password) VALUES (?, ?)`, [email, hashedPassword], function(err) {
             if (err) {
-                res.status(500).json({ error: 'Error adding user to database' });
-                return;
+                return res.status(500).json({ error: err.message });
             }
-
-            // Получаем идентификатор только что добавленного пользователя
-            const userId = this.lastID;
-
-            res.json({ message: 'User added successfully', userId: userId });
+            res.json({ id: this.lastID, email });
         });
-    });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-
-
-  
 
 // Обновление данных в таблице Users
 app.put('/users/:id', (req, res) => {
