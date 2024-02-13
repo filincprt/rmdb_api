@@ -91,6 +91,8 @@ app.post('/users/login', async (req, res) => {
 
 
 
+
+
 // Получение данных из таблицы Users без пароля
 app.get('/users', (req, res) => {
     db.all('SELECT id, email, delivery_address, first_name, last_name FROM Users', (err, rows) => {
@@ -120,6 +122,35 @@ app.post('/users', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// Обновление пароля пользователя по email
+app.put('/users/:email', (req, res) => {
+    const { password } = req.body;
+    const userEmail = req.params.email;
+
+    // Поиск пользователя по email и обновление пароля
+    getUserIdByEmail(userEmail)
+        .then(userId => {
+            if (!userId) {
+                res.status(404).json({ error: 'Пользователь с указанным email не найден' });
+                return;
+            }
+
+            // Обновление пароля в базе данных
+            const query = 'UPDATE Users SET password = ? WHERE id = ?';
+            db.run(query, [password, userId], function (err) {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                res.json({ message: 'Пароль пользователя обновлен успешно' });
+            });
+        })
+        .catch(err => {
+            console.error('Ошибка при поиске пользователя по email:', err);
+            res.status(500).json({ error: 'Ошибка при поиске пользователя по email' });
+        });
 });
 
 
