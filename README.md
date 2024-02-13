@@ -9,7 +9,7 @@
 1. Склонируйте репозиторий: `git clone https://github.com/filin_cprt/ProductManager_wpf.git`
 2. Перейдите в директорию проекта: `cd ProductManager_wpf`
 3. Установите Node.js
-4. Установите зависимости: `npm install`
+4. Установите зависимости: `package.json`
 5. Запустите сервер: `node server.js`
 
 | Метод | Путь | Описание |
@@ -37,6 +37,8 @@
 | DELETE |	/orders/:order_number |	Удаление данных из таблицы Orders по order_number |
 | GET |	/statuses |	Получение всех статусов |
 | GET |	/statuses/:id|	Получение конкретного статуса по ID |
+| POST | /reset-password:id | Запрос кода на почту для сброса пароля |
+| POST | /reset-password/verify/:id | Проверка кода сброса на корректность |
 | POST |	/statuses |	Добавление нового статуса |
 | PUT |	/statuses/:id	| Обновление статуса по ID |
 | DELETE |	/statuses/:id |	Удаление статуса по ID |
