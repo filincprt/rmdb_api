@@ -219,14 +219,14 @@ function getEmailById(userId) {
 }
 
 // Метод для отправки письма с кодом на сброс пароля на электронную почту пользователя
-app.post('/reset-password/:userId', (req, res) => {
-    const userId = req.params.userId;
+app.post('/reset-password/:email', (req, res) => {
+    const email = req.params.email;
 
-    // Получаем email пользователя из базы данных по его id
-    getEmailById(userId)
-        .then(email => {
-            if (!email) {
-                res.status(404).json({ error: 'Пользователь с указанным идентификатором не найден' });
+    // Получаем идентификатор пользователя из базы данных по его email
+    getUserIdByEmail(email)
+        .then(userId => {
+            if (!userId) {
+                res.status(404).json({ error: 'Пользователь с указанным email не найден' });
                 return;
             }
 
@@ -269,45 +269,59 @@ app.post('/reset-password/:userId', (req, res) => {
                 });
         })
         .catch(err => {
-            console.error('Ошибка получения email пользователя из базы данных:', err);
-            res.status(500).json({ error: 'Ошибка получения email пользователя из базы данных' });
+            console.error('Ошибка получения id пользователя из базы данных:', err);
+            res.status(500).json({ error: 'Ошибка получения id пользователя из базы данных' });
         });
 });
 
 // Метод для проверки временного кода при сбросе пароля
-app.post('/reset-password/verify/:userId', (req, res) => {
-    const userId = req.params.userId;
+app.post('/reset-password/verify/:email', (req, res) => {
+    const email = req.params.email;
     const { resetCode } = req.body;
 
-    // Получаем сохраненный код из базы данных
-    getResetCode(userId)
-        .then(savedResetCode => {
-            if (!savedResetCode) {
-                res.status(404).json({ error: 'Временный код не найден' });
+    // Получаем идентификатор пользователя из базы данных по его email
+    getUserIdByEmail(email)
+        .then(userId => {
+            if (!userId) {
+                res.status(404).json({ error: 'Пользователь с указанным email не найден' });
                 return;
             }
 
-            // Проверяем, совпадает ли введенный код с сохраненным
-            if (resetCode === savedResetCode) {
-                // Удаляем код из базы данных
-                removeResetCode(userId)
-                    .then(() => {
-                        // Код верный, разрешаем пользователю сбросить пароль
-                        res.json({ message: 'Верный временный код' });
-                    })
-                    .catch(err => {
-                        console.error('Ошибка удаления временного кода из базы данных:', err);
-                        res.status(500).json({ error: 'Ошибка удаления временного кода из базы данных' });
-                    });
-            } else {
-                res.status(400).json({ error: 'Неверный временный код' });
-            }
+            // Получаем сохраненный код из базы данных
+            getResetCode(userId)
+                .then(savedResetCode => {
+                    if (!savedResetCode) {
+                        res.status(404).json({ error: 'Временный код не найден' });
+                        return;
+                    }
+
+                    // Проверяем, совпадает ли введенный код с сохраненным
+                    if (resetCode === savedResetCode) {
+                        // Удаляем код из базы данных
+                        removeResetCode(userId)
+                            .then(() => {
+                                // Код верный, разрешаем пользователю сбросить пароль
+                                res.json({ message: 'Верный временный код' });
+                            })
+                            .catch(err => {
+                                console.error('Ошибка удаления временного кода из базы данных:', err);
+                                res.status(500).json({ error: 'Ошибка удаления временного кода из базы данных' });
+                            });
+                    } else {
+                        res.status(400).json({ error: 'Неверный временный код' });
+                    }
+                })
+                .catch(err => {
+                    console.error('Ошибка получения временного кода из базы данных:', err);
+                    res.status(500).json({ error: 'Ошибка получения временного кода из базы данных' });
+                });
         })
         .catch(err => {
-            console.error('Ошибка получения временного кода из базы данных:', err);
-            res.status(500).json({ error: 'Ошибка получения временного кода из базы данных' });
+            console.error('Ошибка получения id пользователя из базы данных:', err);
+            res.status(500).json({ error: 'Ошибка получения id пользователя из базы данных' });
         });
 });
+
 
 // Метод для удаления временного кода из базы данных
 function removeResetCode(userId) {
