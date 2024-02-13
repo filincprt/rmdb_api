@@ -219,7 +219,7 @@ app.post('/reset-password/:userId', (req, res) => {
 
             // Генерируем случайный код для сброса пароля
             const resetCode = Math.random().toString(36).substring(2, 8); // Пример: "abc123"
-            const resetCodeExpiry = new Date(Date.now() + 5 * 60 * 1000); // Два минуты с момента создания
+            const resetCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // Два минуты с момента создания
 
             // Сохраняем код и его срок действия в базе данных
             saveResetCode(userId, resetCode, resetCodeExpiry)
@@ -234,7 +234,7 @@ app.post('/reset-password/:userId', (req, res) => {
                             <p>Вы запросили сброс пароля для вашей учетной записи.</p>
                             <p>Для завершения процесса сброса пароля, пожалуйста, введите следующий код:</p>
                             <h2 style="color: #007bff;">${resetCode}</h2>
-                            <p>Код действителен в течение двух минут.</p>
+                            <p>Код действителен в течение 10 минут.</p>
                             <p>Если вы не запрашивали сброс пароля, проигнорируйте это сообщение.</p>
                             <p>С уважением,<br>Команда поддержки</p>
                         `
