@@ -215,8 +215,16 @@ app.post('/reset-password/:userId', (req, res) => {
                     from: 'noreply.internet.cld.fiin@gmail.com',
                     to: email,
                     subject: 'Сброс пароля',
-                    text: `Код для сброса пароля: ${resetCode}`
+                    html: `
+                        <p>Здравствуйте!</p>
+                        <p>Вы запросили сброс пароля для вашей учетной записи.</p>
+                        <p>Для завершения процесса сброса пароля, пожалуйста, введите следующий код:</p>
+                        <h2 style="color: #007bff;">${resetCode}</h2>
+                        <p>Если вы не запрашивали сброс пароля, проигнорируйте это сообщение.</p>
+                        <p>С уважением,<br>Команда поддержки</p>
+                    `
                 };
+
 
                 // Отправляем письмо
                 transporter.sendMail(mailOptions, (error, info) => {
