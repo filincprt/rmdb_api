@@ -202,41 +202,42 @@ app.post('/reset-password/:userId', (req, res) => {
 
             // Генерируем случайный код для сброса пароля
             const resetCode = Math.random().toString(36).substring(2, 8); // Пример: "abc123"
+            const resetCodeExpiry = new Date(Date.now() + 2 * 60 * 1000); // Два минуты с момента создания
 
-            // Хэшируем код сброса пароля
-            bcrypt.hash(resetCode, 10, (err, hashedCode) => {
-                if (err) {
-                    res.status(500).json({ error: 'Ошибка хэширования кода сброса пароля' });
-                    return;
-                }
+            // Сохраняем код и его срок действия в базе данных
+            saveResetCode(userId, resetCode, resetCodeExpiry)
+                .then(() => {
+                    // Формируем текст письма с кодом сброса пароля
+                    const mailOptions = {
+                        from: 'noreply.internet.cld.fiin@gmail.com',
+                        to: email,
+                        subject: 'Сброс пароля',
+                        html: `
+                            <p>Здравствуйте!</p>
+                            <p>Вы запросили сброс пароля для вашей учетной записи.</p>
+                            <p>Для завершения процесса сброса пароля, пожалуйста, введите следующий код:</p>
+                            <h2 style="color: #007bff;">${resetCode}</h2>
+                            <p>Код действителен в течение двух минут.</p>
+                            <p>Если вы не запрашивали сброс пароля, проигнорируйте это сообщение.</p>
+                            <p>С уважением,<br>Команда поддержки</p>
+                        `
+                    };
 
-                // Формируем текст письма с кодом сброса пароля
-                const mailOptions = {
-                    from: 'noreply.internet.cld.fiin@gmail.com',
-                    to: email,
-                    subject: 'Сброс пароля',
-                    html: `
-                        <p>Здравствуйте!</p>
-                        <p>Вы запросили сброс пароля для вашей учетной записи.</p>
-                        <p>Для завершения процесса сброса пароля, пожалуйста, введите следующий код:</p>
-                        <h2 style="color: #007bff;">${resetCode}</h2>
-                        <p>Если вы не запрашивали сброс пароля, проигнорируйте это сообщение.</p>
-                        <p>С уважением,<br>Команда поддержки</p>
-                    `
-                };
-
-
-                // Отправляем письмо
-                transporter.sendMail(mailOptions, (error, info) => {
-                    if (error) {
-                        console.error(error);
-                        res.status(500).json({ error: 'Ошибка отправки электронного письма' });
-                    } else {
-                        console.log('Email sent: ' + info.response);
-                        res.json({ message: 'Код для сброса пароля отправлен на вашу почту' });
-                    }
+                    // Отправляем письмо
+                    transporter.sendMail(mailOptions, (error, info) => {
+                        if (error) {
+                            console.error(error);
+                            res.status(500).json({ error: 'Ошибка отправки электронного письма' });
+                        } else {
+                            console.log('Email sent: ' + info.response);
+                            res.json({ message: 'Код для сброса пароля отправлен на вашу почту' });
+                        }
+                    });
+                })
+                .catch(err => {
+                    console.error('Ошибка сохранения временного кода:', err);
+                    res.status(500).json({ error: 'Ошибка сохранения временного кода' });
                 });
-            });
         })
         .catch(err => {
             console.error('Ошибка получения email пользователя из базы данных:', err);
@@ -244,23 +245,92 @@ app.post('/reset-password/:userId', (req, res) => {
         });
 });
 
-// Функция для получения email пользователя по его идентификатору
-function getEmailById(userId) {
+// Метод для сохранения временного кода в базе данных
+function saveResetCode(userId, resetCode, resetCodeExpiry) {
     return new Promise((resolve, reject) => {
-        const query = 'SELECT email FROM Users WHERE id = ?';
+        // Выполняем запрос к базе данных для сохранения кода и его срока действия
+        const query = `
+            UPDATE Users
+            SET reset_code = ?, reset_code_expiry = ?
+            WHERE id = ?`;
+        db.run(query, [resetCode, resetCodeExpiry, userId], function (err) {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve();
+        });
+    });
+}
+
+// Метод для проверки временного кода при сбросе пароля
+app.post('/reset-password/verify/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const { resetCode } = req.body;
+
+    // Получаем сохраненный код и его срок действия из базы данных
+    getResetCode(userId)
+        .then(({ savedResetCode, resetCodeExpiry }) => {
+            if (!savedResetCode || !resetCodeExpiry) {
+                res.status(404).json({ error: 'Временный код не найден или истек' });
+                return;
+            }
+
+            // Проверяем, совпадает ли введенный код с сохраненным
+            if (resetCode === savedResetCode) {
+                // Проверяем, не истек ли срок действия кода
+                if (new Date() < new Date(resetCodeExpiry)) {
+                    // Код верный и не истек, разрешаем пользователю сбросить пароль
+                    res.json({ message: 'Верный временный код' });
+                } else {
+                    // Срок действия кода истек, удаляем его из базы данных
+                    removeResetCode(userId)
+                        .then(() => {
+                            res.status(400).json({ error: 'Временный код истек' });
+                        })
+                        .catch(err => {
+                            console.error('Ошибка удаления истекшего временного кода:', err);
+                            res.status(500).json({ error: 'Ошибка удаления истекшего временного кода' });
+                        });
+                }
+            } else {
+                res.status(400).json({ error: 'Неверный временный код' });
+            }
+        })
+        .catch(err => {
+            console.error('Ошибка получения временного кода из базы данных:', err);
+            res.status(500).json({ error: 'Ошибка получения временного кода из базы данных' });
+        });
+});
+
+// Метод для получения временного кода из базы данных
+function getResetCode(userId) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT reset_code, reset_code_expiry FROM Users WHERE id = ?';
         db.get(query, [userId], (err, row) => {
             if (err) {
                 reject(err);
                 return;
             }
-            if (!row) {
-                resolve(null); // Пользователь не найден
-                return;
-            }
-            resolve(row.email);
+            resolve({ savedResetCode: row.reset_code, resetCodeExpiry: row.reset_code_expiry });
         });
     });
 }
+
+// Метод для удаления временного кода из базы данных
+function removeResetCode(userId) {
+    return new Promise((resolve, reject) => {
+        const query = 'UPDATE Users SET reset_code = NULL, reset_code_expiry = NULL WHERE id = ?';
+        db.run(query, [userId], function (err) {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve();
+        });
+    });
+}
+
 
 
 
