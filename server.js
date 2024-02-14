@@ -221,9 +221,9 @@ function saveEdit() {
 
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp.office365.com',
+    host: 'smtp.elasticemail.com',
     port: 587,
-    secure: false, // true для использования SSL
+    secure: true, // true для использования SSL
     auth: {
         user: 'internetcldfilin@outlook.com',
         pass: '6wQ-4MeEff'
