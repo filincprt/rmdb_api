@@ -223,7 +223,7 @@ function saveEdit() {
 const transporter = nodemailer.createTransport({
     host: 'smtp.elasticemail.com',
     port: 2525,
-    secure: true, // true для использования SSL
+    secure: false, // true для использования SSL
     auth: {
         user: 'internetcldfilin@mail.ru',
         pass: '8B7E0CD6F8ED588C6B1D0D9C49777D4991B7'
