@@ -221,12 +221,12 @@ function saveEdit() {
 
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp.elasticemail.com',
-    port: 2525,
+    host: 'smtp.office365.com',
+    port: 587,
     secure: false, // true для использования SSL
     auth: {
-        user: 'noreply.internet.cld.fiin@gmail.com',
-        pass: 'E162CDC3CDFDB5E1F36090E07FC3740E027E'
+        user: 'internetcldfilin@outlook.com',
+        pass: '6wQ-4MeEff'
     }
 });
 
