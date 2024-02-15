@@ -827,7 +827,7 @@ app.post('/orders', (req, res) => {
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
-  const { status } = req.body;
+  const { status, courier_id  } = req.body;
 
   // Обновление данных в таблице Orders
   const queryOrder = 'UPDATE Orders SET status_id=? WHERE id=?';
