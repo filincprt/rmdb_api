@@ -733,6 +733,7 @@ app.get('/orders/details', (req, res) => {
                  Orders.order_number,
                  Orders.delivery_time,
                  Orders.user_comment,
+                 Couriers.courier_id,
                  Couriers.Id_number AS courier_id,
                  Couriers.first_name AS courier_first_name,
                  Couriers.last_name AS courier_last_name,
@@ -763,6 +764,7 @@ app.get('/orders/:id', (req, res) => {
                   Couriers.Id_number AS courier_id,
                   Couriers.first_name AS courier_first_name,
                   Couriers.last_name AS courier_last_name,
+                  Couriers.courier_id,
                   Status.name AS status,
                   SUM(Products.price * Order_Lines.quantity) AS total_cost
           FROM Orders
