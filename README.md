@@ -44,5 +44,5 @@
 | DELETE |	/statuses/:id |	Удаление статуса по ID |
 | POST |	/products/increment/:barcode |	Добавление 1 единицы к количеству товара по штрих-коду |
 | DELETE |	/products/decrement/:barcode |	Удаление 1 единицы из количества товара по штрих-коду |
-| POST | /reset-password/:id | Запрос кода на почту для сброса пароля |
-| POST | /reset-password/verify/:id | Верификация кода сброса пароля |
+| POST | /reset-password/:email | Запрос кода на почту для сброса пароля |
+| POST | /reset-password/verify/:email | Верификация кода сброса пароля |
