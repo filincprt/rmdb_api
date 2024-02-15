@@ -682,7 +682,7 @@ app.post('/admin/login', async (req, res) => {
 // GET-метод для получения информации о продажах в целом
 app.get('/order_reports', (req, res) => {
     // Запрос к базе данных для получения данных из таблицы Order_Report
-    db.all('SELECT * FROM Order_Report', (err, rows) => {
+    db.all('SELECT * FROM OrderReport', (err, rows) => {
         if (err) {
             console.error(err.message);
             return res.status(500).json({ error: 'Ошибка при выполнении запроса к базе данных' });
