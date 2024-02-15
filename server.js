@@ -827,10 +827,10 @@ app.post('/orders', (req, res) => {
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
-  const { status, courier_id  } = req.body;
+  const { status, courier_id } = req.body; // Теперь также принимаем courier_id
 
   // Обновление данных в таблице Orders
-  const queryOrder = 'UPDATE Orders SET status_id=? WHERE id=?';
+  const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=? WHERE id=?';
   db.run(queryOrder, [status, courier_id, orderId], function (err) {
     if (err) {
       console.error(err);
