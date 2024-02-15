@@ -831,7 +831,7 @@ app.put('/orders/:id', (req, res) => {
 
   // Обновление данных в таблице Orders
   const queryOrder = 'UPDATE Orders SET status_id=? WHERE id=?';
-  db.run(queryOrder, [status, orderId], function (err) {
+  db.run(queryOrder, [status, courier_id, orderId], function (err) {
     if (err) {
       console.error(err);
       res.status(500).json({ error: err.message });
