@@ -702,6 +702,10 @@ app.get('/orders/details', (req, res) => {
   db.all(`SELECT Orders.id, Users.first_name || ' ' || Users.last_name AS user_name,
                  Orders.order_number,
                  Orders.delivery_time,
+                 Orders.user_comment,
+                 Couriers.Id_number AS courier_id,
+                 Couriers.first_name AS courier_first_name,
+                 Couriers.last_name AS courier_last_name,
                  Products.name AS product_name,
                  Order_Lines.quantity,
                  Products.price,
@@ -712,6 +716,7 @@ app.get('/orders/details', (req, res) => {
           LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
           LEFT JOIN Products ON Order_Lines.product_id = Products.id
           LEFT JOIN Status ON Orders.status_id = Status.id
+          LEFT JOIN Couriers ON Orders.courier_id = Couriers.courier_id
           GROUP BY Orders.id`, (err, rows) => {
       if (err) {
           res.status(500).json({ error: err.message });
@@ -724,13 +729,18 @@ app.get('/orders/details', (req, res) => {
 // Получение заказа по ID с общей стоимостью заказа
 app.get('/orders/:id', (req, res) => {
   const id = req.params.id;
-  db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name, Status.name AS status,
+  db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name,
+                  Couriers.Id_number AS courier_id,
+                  Couriers.first_name AS courier_first_name,
+                  Couriers.last_name AS courier_last_name,
+                  Status.name AS status,
                   SUM(Products.price * Order_Lines.quantity) AS total_cost
           FROM Orders
           JOIN Users ON Orders.user_id = Users.id
           LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
           LEFT JOIN Products ON Order_Lines.product_id = Products.id
           LEFT JOIN Status ON Orders.status_id = Status.id
+          LEFT JOIN Couriers ON Orders.courier_id = Couriers.courier_id
           WHERE Orders.id = ?
           GROUP BY Orders.id`, [id], (err, row) => {
       if (err) {
@@ -741,11 +751,9 @@ app.get('/orders/:id', (req, res) => {
   });
 });
 
-
-
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-  const { user_id, product_id, quantity, order_number, delivery_time, status_id } = req.body;
+  const { user_id, product_id, quantity, order_number, delivery_time, status_id, courier_id, user_comment } = req.body;
 
   // Проверить наличие достаточного количества товара на складе
   const checkAvailabilityQuery = 'SELECT quantity FROM Products WHERE id = ?';
@@ -761,8 +769,8 @@ app.post('/orders', (req, res) => {
     }
 
     // Если достаточное количество товара доступно, добавить заказ
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id) VALUES (?, ?, ?, ?)';
-    db.run(queryOrder, [user_id, order_number, delivery_time, status_id], function (err) {
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, order_number, delivery_time, status_id, courier_id, user_comment], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
