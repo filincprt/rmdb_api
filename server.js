@@ -416,6 +416,36 @@ function getResetCode(userId) {
     });
 }
 
+//---------------------COURIERS----------------------
+
+// Получение всех курьеров
+app.get('/couriers', (req, res) => {
+  db.all(`SELECT Couriers.*, Courier_Status.status_name
+          FROM Couriers
+          JOIN Courier_Status ON Couriers.status_id = Courier_Status.status_id`, (err, rows) => {
+      if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+      }
+      res.json({ couriers: rows });
+  });
+});
+
+// Получение информации о курьере по ID
+app.get('/couriers/:id', (req, res) => {
+  const courierId = req.params.id;
+  db.get(`SELECT Couriers.*, Courier_Status.status_name
+          FROM Couriers
+          JOIN Courier_Status ON Couriers.status_id = Courier_Status.status_id
+          WHERE Couriers.courier_id = ?`, [courierId], (err, row) => {
+      if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+      }
+      res.json({ courier: row });
+  });
+});
+
 
 //---------------------PRODUCTS----------------------
 
