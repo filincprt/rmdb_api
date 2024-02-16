@@ -284,7 +284,7 @@ app.post('/reset-password/:email', (req, res) => {
                 .then(() => {
                     // Формируем текст письма с кодом сброса пароля
                     const mailOptions = {
-                        from: 'internetcldfilin@mail.ru',
+                        from: 'noreply.internet.cld.fiin@gmail.com',
                         to: email,
                         subject: 'Сброс пароля',
                         html: `
