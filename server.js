@@ -225,8 +225,8 @@ const transporter = nodemailer.createTransport({
     port: 2525,
     secure: false, // true для использования SSL
     auth: {
-        user: 'internetcldfilin@mail.ru',
-        pass: '8B7E0CD6F8ED588C6B1D0D9C49777D4991B7'
+        user: 'noreply.internet.cld.fiin@gmail.com',
+        pass: 'D313A8B84A3D67B83A3CCE9D866943F1C856'
     }
 });
 
