@@ -303,14 +303,17 @@ app.post('/reset-password/:email', (req, res) => {
                         to: email,
                         subject: 'Сброс пароля',
                         html: `
-                            <p>Здравствуйте!</p>
-                            <p>Вы запросили сброс пароля для вашей учетной записи.</p>
-                            <p>Для завершения процесса сброса пароля, пожалуйста, введите следующий код:</p>
-                            <h2 style="color: #007bff;">${resetCode}</h2>
-                            <p>Код действителен в течение 10 минут.</p>
-                            <p>Если вы не запрашивали сброс пароля, проигнорируйте это сообщение.</p>
-                            <p>С уважением,<br>Команда поддержки CPRT</p>
-                        `
+                               <div style="background-color: #f9f9f9; padding: 20px; font-family: Arial, sans-serif;">
+                                   <p style="font-size: 16px;">Здравствуйте!</p>
+                                   <p style="font-size: 16px;">Вы запросили сброс пароля для вашей учетной записи.</p>
+                                   <p style="font-size: 16px;">Для завершения процесса сброса пароля, пожалуйста, введите следующий код:</p>
+                                   <h2 style="color: #007bff; font-size: 24px;">${resetCode}</h2>
+                                   <p style="font-size: 16px;">Код действителен в течение 10 минут.</p>
+                                   <hr style="border: 0; border-top: 1px solid #ddd;">
+                                   <p style="font-size: 16px;">Если вы не запрашивали сброс пароля, проигнорируйте это сообщение.</p>
+                                   <p style="font-size: 16px;">С уважением,<br>Команда поддержки CPRT</p>
+                               </div>
+                           `
                     };
 
                     // Отправляем письмо
