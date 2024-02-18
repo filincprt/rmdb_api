@@ -124,7 +124,6 @@ app.post('/users', async (req, res) => {
     }
 });
 
-// Обновление пароля пользователя по email
 app.put('/users/:email', (req, res) => {
     const { password } = req.body;
     const userEmail = req.params.email;
@@ -144,7 +143,30 @@ app.put('/users/:email', (req, res) => {
                     res.status(500).json({ error: err.message });
                     return;
                 }
-                res.json({ message: 'Пароль пользователя обновлен успешно' });
+                
+                // Отправляем письмо о сбросе пароля
+                const mailOptions = {
+                    from: 'noreply.internet.cld.fiin@gmail.com',
+                    to: userEmail,
+                    subject: 'Успешный сброс пароля',
+                    html: `
+                        <p>Здравствуйте!</p>
+                        <p>Ваш пароль был успешно изменен.</p>
+                        <p>Если вы не выполняли эту операцию, свяжитесь с нашей службой поддержки!</p>
+                        <p>С уважением,<br>Команда поддержки CPRT</p>
+                    `
+                };
+
+                // Отправляем письмо
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error(error);
+                        res.status(500).json({ error: 'Ошибка отправки электронного письма' });
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                        res.json({ message: 'Пароль пользователя успешно обновлен и отправлено уведомление на почту' });
+                    }
+                });
             });
         })
         .catch(err => {
