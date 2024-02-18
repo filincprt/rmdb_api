@@ -97,6 +97,71 @@ app.get('/users', (req, res) => {
     });
 });
 
+//--------------------------------------------
+
+// Метод для отправки кода подтверждения на email
+app.post('/sendCodeVetifyRegisterEmail', (req, res) => {
+    const { email } = req.body;
+    const code = Math.floor(100000 + Math.random() * 900000); // Генерация случайного кода
+
+    // Отправка email с кодом подтверждения
+    const mailOptions = {
+        from: 'noreply.internet.cld.fiin@gmail.com',
+        to: email,
+        subject: 'Подтверждение регистрации',
+        text: `Ваш код подтверждения: ${code}`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.log(error);
+            res.status(500).send('Ошибка при отправке кода подтверждения.');
+        } else {
+            // Сохранение кода в базе данных
+            db.run('INSERT INTO ConfirmationCodes (email, code) VALUES (?, ?)', [email, code], (err) => {
+                if (err) {
+                    console.log(err);
+                    res.status(500).send('Ошибка при сохранении кода подтверждения.');
+                } else {
+                    console.log('Email с кодом подтверждения отправлен.');
+                    res.status(200).send('Email с кодом подтверждения отправлен.');
+                }
+            });
+        }
+    });
+});
+
+// Метод для регистрации пользователя с проверкой кода подтверждения
+app.post('/register', (req, res) => {
+    const { email, code, password } = req.body;
+
+    // Проверка кода подтверждения в базе данных
+    db.get('SELECT * FROM ConfirmationCodes WHERE email = ? AND code = ?', [email, code], (err, row) => {
+        if (err) {
+            console.log(err);
+            res.status(500).send('Ошибка при выполнении запроса.');
+        } else if (!row) {
+            res.status(400).send('Неправильный код подтверждения.');
+        } else {
+            db.run(`INSERT INTO Users (email, password) VALUES (?, ?)`, [email, password], function(err) {
+                if (err) {
+                    return res.status(500).json({ error: err.message });
+                }
+                // Удаляем email и код из таблицы ConfirmationCodes
+                db.run('DELETE FROM ConfirmationCodes WHERE email = ?', [email], function(err) {
+                    if (err) {
+                        console.log(err);
+                        res.status(500).send('Ошибка при удалении кода подтверждения.');
+                    } else {
+                        res.status(200).send('Пользователь успешно зарегистрирован.'); // Отправляем сообщение о успешной регистрации
+                    }
+                });
+            });
+        }
+    });
+});
+
+
 // Добавление нового пользователя с хэшированным паролем
 app.post('/users', async (req, res) => {
     try {
@@ -117,6 +182,10 @@ app.post('/users', async (req, res) => {
     }
 });
 
+
+//------------------------------------------------------------------
+
+//Отправка кода на почту для сброса пароля
 app.put('/users/:email', (req, res) => {
     const { password } = req.body;
     const userEmail = req.params.email;
