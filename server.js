@@ -66,18 +66,14 @@ app.post('/users/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         
-        // Хэшируем введенный пароль для сравнения с хэшем в базе данных
-        const hashedPassword = await bcrypt.hash(password, 10);
-
         // Выбираем пользователя из базы данных по электронной почте
         db.get('SELECT * FROM Users WHERE email = ?', [email], async (err, row) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
 
-            // Проверяем, совпадают ли хэшированные пароли
-            const passwordsMatch = await bcrypt.compare(password, row.password);
-            if (!row || !passwordsMatch) {
+            // Проверяем, совпадают ли пароли
+            if (!row || row.password !== password) {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
 
@@ -88,9 +84,6 @@ app.post('/users/login', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-
-
 
 
 // Получение данных из таблицы Users без пароля
