@@ -694,22 +694,37 @@ app.get('/categories', (req, res) => {
       res.json({ changes: this.changes });
     });
   });
+
   
-  // Удаление данных из таблицы Categories
-  app.delete('/categories/:id', (req, res) => {
+// Удаление данных из таблицы Categories и всех товаров, принадлежащих к данной категории
+app.delete('/categories/:id', (req, res) => {
     const categoryId = req.params.id;
-    const query = 'DELETE FROM Category WHERE id=?';
-    db.run(query, [categoryId], function (err) {
-      if (err) {
-        res.status(500).json({ error: err.message });
-        return;
-      }
-      res.json({ deleted: this.changes });
+
+    const getProductQuery = 'SELECT id FROM Products WHERE category_id = ?';
+    db.all(getProductQuery, [categoryId], (err, products) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        const deleteProductsQuery = 'DELETE FROM Products WHERE category_id = ?';
+        db.run(deleteProductsQuery, [categoryId], function (err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            const deleteCategoryQuery = 'DELETE FROM Category WHERE id = ?';
+            db.run(deleteCategoryQuery, [categoryId], function (err) {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                res.json({ deletedCategory: this.changes, deletedProducts: products.length });
+            });
+        });
     });
-  });
-
-
-
+});
 
 
 //------------------------Autentifications----------------
@@ -718,7 +733,6 @@ app.get('/categories', (req, res) => {
 app.post('/admin/register', async (req, res) => {
   const { username, password } = req.body;
 
-  // Генерация соли
   const saltRounds = 12;
   const salt = await bcrypt.genSalt(saltRounds);
 
