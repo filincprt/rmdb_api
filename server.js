@@ -833,6 +833,7 @@ app.get('/orders/details', (req, res) => {
   db.all(`SELECT Orders.id, Users.first_name || ' ' || Users.last_name AS user_name,
                  Orders.order_number,
                  Orders.delivery_time,
+                 Orders.address,
                  Orders.user_comment,
                  Couriers.courier_id,
                  Couriers.Id_number AS courier_id,
@@ -865,6 +866,7 @@ app.get('/orders/:id', (req, res) => {
                   Couriers.Id_number AS courier_id,
                   Couriers.first_name AS courier_first_name,
                   Couriers.last_name AS courier_last_name,
+                  Orders.address,
                   Couriers.courier_id,
                   Status.name AS status,
                   SUM(Products.price * Order_Lines.quantity) AS total_cost
@@ -886,7 +888,7 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-  const { user_id, product_id, quantity, order_number, delivery_time, status_id, courier_id, user_comment } = req.body;
+  const { user_id, product_id, quantity, order_number, delivery_time, status_id, address, courier_id, user_comment } = req.body;
 
   // Проверить наличие достаточного количества товара на складе
   const checkAvailabilityQuery = 'SELECT quantity FROM Products WHERE id = ?';
@@ -902,8 +904,8 @@ app.post('/orders', (req, res) => {
     }
 
     // Если достаточное количество товара доступно, добавить заказ
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?)';
-    db.run(queryOrder, [user_id, order_number, delivery_time, status_id, courier_id, user_comment], function (err) {
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, order_number, delivery_time, status_id, address, courier_id, user_comment], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -928,11 +930,11 @@ app.post('/orders', (req, res) => {
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
-  const { status, courier_id } = req.body; // Теперь также принимаем courier_id
+  const { status, courier_id, address } = req.body;
 
   // Обновление данных в таблице Orders
-  const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=? WHERE id=?';
-  db.run(queryOrder, [status, courier_id, orderId], function (err) {
+  const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=? WHERE id=?';
+  db.run(queryOrder, [status, courier_id, address, orderId], function (err) {
     if (err) {
       console.error(err);
       res.status(500).json({ error: err.message });
@@ -988,29 +990,6 @@ app.delete('/orders/:order_number', (req, res) => {
       });
   });
 });
-
-
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
-});
-
-io.of('productHub').on('connection', (socket) => {
-  console.log('Client connected to productHub');
-
-  socket.on('updateProduct', (data) => {
-    db.run('UPDATE Products SET name = ?, quantity = ?, price = ? WHERE id = ?', [data.name, data.quantity, data.price, data.id]);
-
-    io.of('/productHub').emit('productUpdated', data);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected from productHub');
-  });
-});
-
-
 
 // Метод GET для получения всех статусов
 app.get('/statuses', (req, res) => {
