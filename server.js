@@ -1164,7 +1164,6 @@ const assignCourierToAnotherOrder = (currentOrderId) => {
     const queryNearestOrder = `
       SELECT id FROM Orders
       WHERE courier_id IS NULL
-      ORDER BY ABS(DATEDIFF('now', created_at))
       LIMIT 1
     `;
     db.get(queryNearestOrder, [], (err, nearestOrder) => {
