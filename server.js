@@ -1148,7 +1148,7 @@ const updateCourier = (orderNumber, courierId, callback) => {
 const assignCourierToAnotherOrder = (currentOrderId) => {
   // Получаем информацию о текущем курьере
   const queryCourier = 'SELECT * FROM Couriers WHERE courier_id = ?';
-  db.get(queryCourier, [currentOrderId], (err, courier) => {
+  db.get(queryCourier, [courierId], (err, courier) => {
     if (err) {
       console.error(err);
       return;
