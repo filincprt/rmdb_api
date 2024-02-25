@@ -533,6 +533,41 @@ app.get('/couriers/:id', (req, res) => {
   });
 });
 
+app.post('/courier_register', (req, res) => {
+    const { first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier } = req.body;
+
+    // Проверка наличия всех обязательных полей
+    if (!first_name || !last_name || !contact_number || !Id_number || !login_courier || !pass_courier) {
+        return res.status(400).json({ error: 'Пожалуйста, заполните все обязательные поля.' });
+    }
+
+    // Добавление нового курьера в базу данных
+    const stmt = db.prepare(`INSERT INTO Couriers (first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    stmt.run(first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier, (err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
+        }
+        res.status(200).json({ message: 'Курьер успешно зарегистрирован.' });
+    });
+    stmt.finalize();
+});
+
+// Метод для авторизации курьера
+app.post('/courier_login', (req, res) => {
+    const { login_courier, pass_courier } = req.body;
+
+    // Поиск курьера по логину и паролю в базе данных
+    db.get(`SELECT * FROM Couriers WHERE login_courier = ? AND pass_courier = ?`, [login_courier, pass_courier], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Курьер с указанными учетными данными не найден.' });
+        }
+        // Возвращаем информацию о курьере в случае успешной авторизации
+        res.status(200).json(row);
+    });
+});
 
 //---------------------PRODUCTS----------------------
 
