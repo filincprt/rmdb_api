@@ -1081,29 +1081,6 @@ app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
   const { status, courier_id, address } = req.body;
 
-  // Проверка, было ли изменение статуса заказа на "Доставлен" или "Отменён"
-  if (status === 'Доставлен' || status === 'Отменён') {
-    // Получаем информацию о курьере, назначенном на этот заказ
-    const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
-    db.get(queryGetCourier, [orderId], (err, row) => {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-        return;
-      }
-
-      // Если курьер был назначен на этот заказ, освободить его
-      const assignedCourierId = row.courier_id;
-      if (assignedCourierId !== null) {
-        // Обновляем информацию о курьере
-        updateCourier(null, assignedCourierId);
-
-        // Назначаем курьера на другой заказ
-        assignCourierToAnotherOrder();
-      }
-    });
-  }
-
   // Обновление данных в таблице Orders
   const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=? WHERE id=?';
   db.run(queryOrder, [status, courier_id, address, orderId], function (err) {
@@ -1114,7 +1091,30 @@ app.put('/orders/:id', (req, res) => {
     }
 
     if (this.changes > 0) {
-      res.json({ changes: this.changes });
+      // Проверка, было ли изменение статуса заказа на "Доставлен" или "Отменён"
+      if (status === 'Доставлен' || status === 'Отменён') {
+        // Получаем информацию о курьере, назначенном на этот заказ
+        const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
+        db.get(queryGetCourier, [orderId], (err, row) => {
+          if (err) {
+            console.error(err);
+            res.status(500).json({ error: err.message });
+            return;
+          }
+
+          // Если курьер был назначен на этот заказ, освободить его
+          const assignedCourierId = row.courier_id;
+          if (assignedCourierId !== null) {
+            // Обновляем информацию о курьере
+            updateCourier(null, assignedCourierId);
+
+            // Назначаем курьера на другой заказ
+            assignCourierToAnotherOrder();
+          }
+        });
+      } else {
+        res.json({ changes: this.changes });
+      }
     } else {
       res.status(500).json({ error: 'No changes made' });
     }
@@ -1151,7 +1151,6 @@ const assignCourierToAnotherOrder = () => {
     }
   });
 };
-
 
 
 
