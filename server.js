@@ -980,48 +980,23 @@ app.post('/orders', (req, res) => {
 
   // Функция добавления заказа с сгенерированным номером
   const addOrder = (orderNumber) => {
-    // Поиск подходящего курьера
-    const findCourierQuery = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL LIMIT 1';
-    db.get(findCourierQuery, [], (err, row) => {
+    // Добавляем заказ
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, user_comment) VALUES (?, ?, ?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, user_comment], function (err) {
       if (err) {
         res.status(500).json({ error: err.message });
         return;
       }
 
-      if (!row) {
-        res.status(400).json({ error: 'Нет доступных курьеров' });
-        return;
-      }
-
-      const courier_id = row.courier_id;
-      
-      // Если курьер найден, добавляем заказ
-      const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
-      db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courier_id, user_comment], function (err) {
+      const orderId = this.lastID;
+      const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+      db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
         if (err) {
           res.status(500).json({ error: err.message });
           return;
         }
 
-        const orderId = this.lastID;
-        const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-        db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-          if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-          }
-
-          // Обновляем номер заказа у курьера
-          const updateCourierQuery = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
-          db.run(updateCourierQuery, [orderNumber, courier_id], function (err) {
-            if (err) {
-              res.status(500).json({ error: err.message });
-              return;
-            }
-
-            res.json({ id: orderId });
-          });
-        });
+        res.json({ id: orderId });
       });
     });
   };
@@ -1029,6 +1004,7 @@ app.post('/orders', (req, res) => {
   // Генерировать номер заказа и добавить заказ
   generateOrderNumber();
 });
+
 
 
 
