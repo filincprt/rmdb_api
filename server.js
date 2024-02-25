@@ -533,6 +533,43 @@ app.get('/couriers/:id', (req, res) => {
   });
 });
 
+// Редактирование информации о курьере
+app.put('/couriers/:id', (req, res) => {
+    const courierId = req.params.id;
+    const { first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier } = req.body;
+
+    // Проверка наличия всех обязательных полей
+    if (!first_name || !last_name || !contact_number || !Id_number || !login_courier || !pass_courier) {
+        return res.status(400).json({ error: 'Пожалуйста, заполните все обязательные поля.' });
+    }
+
+    // Обновление информации о курьере в базе данных
+    const stmt = db.prepare(`UPDATE Couriers SET first_name = ?, last_name = ?, second_name = ?, contact_number = ?, Id_number = ?, login_courier = ?, pass_courier = ? WHERE courier_id = ?`);
+    stmt.run(first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier, courierId, (err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
+        }
+        res.status(200).json({ message: 'Информация о курьере успешно обновлена.' });
+    });
+    stmt.finalize();
+});
+
+// Удаление курьера по ID
+app.delete('/couriers/:id', (req, res) => {
+    const courierId = req.params.id;
+
+    // Удаление курьера из базы данных
+    const stmt = db.prepare(`DELETE FROM Couriers WHERE courier_id = ?`);
+    stmt.run(courierId, (err) => {
+        if (err) {
+            return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
+        }
+        res.status(200).json({ message: 'Курьер успешно удален.' });
+    });
+    stmt.finalize();
+});
+
+
 app.post('/courier_register', (req, res) => {
     const { first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier } = req.body;
 
