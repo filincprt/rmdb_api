@@ -1145,7 +1145,7 @@ const updateCourier = (orderNumber, courierId, callback) => {
   });
 };
 
-const assignCourierToAnotherOrder = (currentOrderId) => {
+const assignCourierToAnotherOrder = (currentOrderId, courierId) => {
   // Получаем информацию о текущем курьере
   const queryCourier = 'SELECT * FROM Couriers WHERE courier_id = ?';
   db.get(queryCourier, [courierId], (err, courier) => {
@@ -1156,7 +1156,7 @@ const assignCourierToAnotherOrder = (currentOrderId) => {
 
     // Если курьер не найден
     if (!courier) {
-      console.log(`Курьер с ID ${currentOrderId} не найден.`);
+      console.log(`Курьер с ID ${courierId} не найден.`);
       return;
     }
 
@@ -1176,9 +1176,9 @@ const assignCourierToAnotherOrder = (currentOrderId) => {
       if (nearestOrder) {
         const nearestOrderId = nearestOrder.id;
         // Назначаем ближайший заказ текущему курьеру
-        updateCourier(nearestOrderId, currentOrderId, (err) => {
+        updateCourier(nearestOrderId, courierId, (err) => {
           if (!err) {
-            console.log(`Курьеру ${currentOrderId} назначен ближайший заказ ${nearestOrderId}`);
+            console.log(`Курьеру ${courierId} назначен ближайший заказ ${nearestOrderId}`);
           }
         });
       } else {
