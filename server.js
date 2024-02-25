@@ -997,30 +997,28 @@ app.get('/orders/:id', (req, res) => {
 app.post('/orders', (req, res) => {
   const { user_id, product_id, quantity, delivery_time, status_id, address, user_comment } = req.body;
 
-  // Метод для уведомления случайных свободных активных курьеров о новом заказе
-  const notifyFreeCouriers = (orderNumber) => {
-    // Получаем список свободных активных курьеров
-    const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
-    db.all(queryFreeCouriers, [], (err, rows) => {
-      if (err) {
-        res.status(500).json({ error: err.message });
-        return;
-      }
+ // Метод для уведомления случайных свободных активных курьеров о новом заказе
+const notifyFreeCouriers = (orderNumber) => {
+  // Получаем список свободных активных курьеров
+  const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
+  db.all(queryFreeCouriers, [], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
 
-      // Если нет свободных активных курьеров, возвращаем сообщение об ошибке
-      if (rows.length === 0) {
-        res.status(400).json({ error: 'Нет свободных активных курьеров для уведомления' });
-        return;
-      }
-
-      // Случайным образом выбираем курьера из списка
+    // Если есть свободные активные курьеры, выбираем случайного и добавляем заказ
+    if (rows.length > 0) {
       const randomCourierIndex = Math.floor(Math.random() * rows.length);
       const randomCourierId = rows[randomCourierIndex].courier_id;
-
-      // Добавляем заказ с сгенерированным номером в таблицу Orders
       addOrder(orderNumber, randomCourierId);
-    });
-  };
+    } else {
+      // Если нет свободных активных курьеров, просто добавляем заказ без назначения курьера
+      addOrder(orderNumber, null);
+    }
+  });
+};
+
 
   // Функция добавления заказа в таблицу Orders
 const addOrder = (orderNumber, courierId) => {
