@@ -507,10 +507,7 @@ function getResetCode(userId) {
 
 // Получение всех курьеров с номером заказа
 app.get('/couriers', (req, res) => {
-  db.all(`SELECT Couriers.*, Courier_Status.status_name, (
-              SELECT order_number FROM Orders 
-              WHERE Couriers.courier_id = Orders.courier_id LIMIT 1
-          ) AS order_number
+  db.all(`SELECT Couriers.*, Courier_Status.status_name
           FROM Couriers
           LEFT JOIN Courier_Status ON Couriers.status_id = Courier_Status.status_id`, (err, rows) => {
       if (err) {
@@ -524,10 +521,7 @@ app.get('/couriers', (req, res) => {
 // Получение информации о курьере по ID с номером заказа
 app.get('/couriers/:id', (req, res) => {
   const courierId = req.params.id;
-  db.get(`SELECT Couriers.*, Courier_Status.status_name, (
-              SELECT order_number FROM Orders 
-              WHERE Couriers.courier_id = Orders.courier_id LIMIT 1
-          ) AS order_number
+  db.get(`SELECT Couriers.*, Courier_Status.status_name
           FROM Couriers
           LEFT JOIN Courier_Status ON Couriers.status_id = Courier_Status.status_id
           WHERE Couriers.courier_id = ?`, [courierId], (err, row) => {
@@ -538,6 +532,7 @@ app.get('/couriers/:id', (req, res) => {
       res.json({ courier: row });
   });
 });
+
 
 // Редактирование информации о курьере
 app.put('/couriers/:id', (req, res) => {
