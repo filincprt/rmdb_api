@@ -1178,7 +1178,7 @@ const assignCourierToAnotherOrder = (currentOrderId, courierId) => {
                 const nearestOrderId = nearestOrder.id;
                 const nearestOrderNumber = nearestOrder.order_number;
                 // Назначаем ближайший заказ текущему курьеру
-                updateOrdersAndCourier(nearestOrderId, courierId, courier.first_name, courier.last_name, nearestOrderNumber, (err) => {
+                updateOrdersAndCourier(nearestOrderId, courierId, nearestOrderNumber, (err) => {
                     if (!err) {
                         console.log(`Курьеру ${courierId} назначен ближайший заказ ${nearestOrderNumber}`);
                     }
@@ -1190,10 +1190,10 @@ const assignCourierToAnotherOrder = (currentOrderId, courierId) => {
     });
 };
 
-const updateOrdersAndCourier = (orderId, courierId, courierFirstName, courierLastName, orderNumber, callback) => {
+const updateOrdersAndCourier = (orderId, courierId, orderNumber, callback) => {
     // Обновляем информацию о курьере в заказе
-    const queryUpdateOrder = 'UPDATE Orders SET courier_id=?, courier_first_name=?, courier_last_name=?, order_number=? WHERE id=?';
-    db.run(queryUpdateOrder, [courierId, courierFirstName, courierLastName, orderNumber, orderId], function (err) {
+    const queryUpdateOrder = 'UPDATE Orders SET courier_id=?, order_number=? WHERE id=?';
+    db.run(queryUpdateOrder, [courierId, orderNumber, orderId], function (err) {
         if (err) {
             console.error('Ошибка при обновлении информации о заказе:', err);
             callback(err); // Вызываем обратный вызов с ошибкой
@@ -1209,6 +1209,7 @@ const updateOrdersAndCourier = (orderId, courierId, courierFirstName, courierLas
         }
     });
 };
+
 
 
 
