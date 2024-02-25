@@ -1162,7 +1162,7 @@ const assignCourierToAnotherOrder = (currentOrderId, courierId) => {
 
         // Поиск ближайшего свободного заказа
         const queryNearestOrder = `
-            SELECT order_number FROM Orders
+            SELECT id, order_number FROM Orders
             WHERE courier_id IS NULL
             ORDER BY id ASC
             LIMIT 1
@@ -1175,9 +1175,10 @@ const assignCourierToAnotherOrder = (currentOrderId, courierId) => {
 
             // Если ближайший заказ найден
             if (nearestOrder) {
+                const nearestOrderId = nearestOrder.id;
                 const nearestOrderNumber = nearestOrder.order_number;
                 // Назначаем ближайший заказ текущему курьеру
-                updateCourier(nearestOrderNumber, courierId, (err) => {
+                updateOrdersAndCourier(nearestOrderId, courierId, courier.first_name, courier.last_name, nearestOrderNumber, (err) => {
                     if (!err) {
                         console.log(`Курьеру ${courierId} назначен ближайший заказ ${nearestOrderNumber}`);
                     }
@@ -1186,6 +1187,26 @@ const assignCourierToAnotherOrder = (currentOrderId, courierId) => {
                 console.log('Нет доступных заказов для назначения.');
             }
         });
+    });
+};
+
+const updateOrdersAndCourier = (orderId, courierId, courierFirstName, courierLastName, orderNumber, callback) => {
+    // Обновляем информацию о курьере в заказе
+    const queryUpdateOrder = 'UPDATE Orders SET courier_id=?, courier_first_name=?, courier_last_name=?, order_number=? WHERE id=?';
+    db.run(queryUpdateOrder, [courierId, courierFirstName, courierLastName, orderNumber, orderId], function (err) {
+        if (err) {
+            console.error('Ошибка при обновлении информации о заказе:', err);
+            callback(err); // Вызываем обратный вызов с ошибкой
+        } else {
+            console.log('Информация о заказе успешно обновлена.');
+            // Обновляем информацию о курьере
+            updateCourier(orderNumber, courierId, (err) => {
+                if (!err) {
+                    console.log('Информация о курьере успешно обновлена.');
+                    callback(null); // Вызываем обратный вызов без ошибки
+                }
+            });
+        }
     });
 };
 
