@@ -1081,6 +1081,29 @@ app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
   const { status, courier_id, address } = req.body;
 
+  // Проверка, было ли изменение статуса заказа на "Доставлен" или "Отменён"
+  if (status === 'Доставлен' || status === 'Отменён') {
+    // Получаем информацию о курьере, назначенном на этот заказ
+    const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
+    db.get(queryGetCourier, [orderId], (err, row) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+        return;
+      }
+
+      // Если курьер был назначен на этот заказ, освободить его
+      const assignedCourierId = row.courier_id;
+      if (assignedCourierId !== null) {
+        // Обновляем информацию о курьере
+        updateCourier(null, assignedCourierId);
+
+        // Назначаем курьера на другой заказ
+        assignCourierToAnotherOrder();
+      }
+    });
+  }
+
   // Обновление данных в таблице Orders
   const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=? WHERE id=?';
   db.run(queryOrder, [status, courier_id, address, orderId], function (err) {
@@ -1097,6 +1120,39 @@ app.put('/orders/:id', (req, res) => {
     }
   });
 });
+
+// Функция обновления информации о курьере
+const updateCourier = (orderNumber, courierId) => {
+  const queryUpdateCourier = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
+  db.run(queryUpdateCourier, [orderNumber, courierId], function (err) {
+    if (err) {
+      console.error('Ошибка при обновлении информации о курьере:', err);
+    }
+  });
+};
+
+// Функция назначения курьера на другой заказ без курьера
+const assignCourierToAnotherOrder = () => {
+  // Получаем список заказов без курьера
+  const queryGetOrdersWithoutCourier = 'SELECT id FROM Orders WHERE courier_id IS NULL';
+  db.all(queryGetOrdersWithoutCourier, [], (err, rows) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    // Если есть заказы без курьера, выбираем случайный заказ и назначаем на него курьера
+    if (rows.length > 0) {
+      const randomOrderIndex = Math.floor(Math.random() * rows.length);
+      const randomOrderId = rows[randomOrderIndex].id;
+
+      // Обновляем информацию о курьере
+      updateCourier(randomOrderId, courier_id);
+    }
+  });
+};
+
+
 
 
 // Удаление данных из таблицы Orders по order_number
