@@ -1131,16 +1131,18 @@ app.put('/orders/:id', (req, res) => {
 });
 
 // Функция обновления информации о курьере
-const updateCourier = (orderNumber, courierId, callback) => {
+const updateCourier = (orderNumber, courierId) => {
+  console.log('Обновление информации о курьере...');
   const queryUpdateCourier = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
   db.run(queryUpdateCourier, [orderNumber, courierId], function (err) {
     if (err) {
       console.error('Ошибка при обновлении информации о курьере:', err);
+    } else {
+      console.log('Информация о курьере успешно обновлена.');
     }
-    // Вызываем callback после выполнения запроса
-    callback();
   });
 };
+
 
 // Функция назначения курьера на другой заказ без курьера
 const assignCourierToAnotherOrder = (orderId) => {
