@@ -1008,15 +1008,16 @@ app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
   const { status, courier_id, address } = req.body;
 
-  // Получение идентификатора предыдущего курьера
-  db.get('SELECT courier_id FROM Orders WHERE id = ?', [orderId], (err, row) => {
+  // Получение текущего courier_id и order_number для данного заказа
+  const queryGetOrder = 'SELECT courier_id FROM Orders WHERE id=?';
+  db.get(queryGetOrder, [orderId], (err, row) => {
     if (err) {
       console.error(err);
       res.status(500).json({ error: err.message });
       return;
     }
 
-    const previousCourierId = row ? row.courier_id : null;
+    const previousCourierId = row.courier_id;
 
     // Обновление данных в таблице Orders
     const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=? WHERE id=?';
@@ -1027,25 +1028,25 @@ app.put('/orders/:id', (req, res) => {
         return;
       }
 
-      if (this.changes > 0) {
-        // Если были внесены изменения, удалить привязку у предыдущего курьера
-        if (previousCourierId !== null) {
-          db.run('UPDATE Couriers SET order_number=NULL WHERE courier_id=?', [previousCourierId], function (err) {
-            if (err) {
-              console.error(err);
-              res.status(500).json({ error: err.message });
-              return;
-            }
-          });
+      // Удаление order_number у предыдущего курьера
+      const queryDeleteOrderNumber = 'UPDATE Couriers SET order_number=NULL WHERE courier_id=?';
+      db.run(queryDeleteOrderNumber, [previousCourierId], function (err) {
+        if (err) {
+          console.error(err);
+          res.status(500).json({ error: err.message });
+          return;
         }
 
-        res.json({ changes: this.changes });
-      } else {
-        res.status(500).json({ error: 'No changes made' });
-      }
+        if (this.changes > 0) {
+          res.json({ changes: this.changes });
+        } else {
+          res.status(500).json({ error: 'No changes made' });
+        }
+      });
     });
   });
 });
+
 
 
 // Удаление данных из таблицы Orders по order_number
