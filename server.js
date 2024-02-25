@@ -1003,53 +1003,27 @@ app.post('/orders', (req, res) => {
   });
 });
 
-
-
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
   const { status, courier_id, address } = req.body;
 
-  // Получение информации о предыдущем курьере из заказа
-  db.get(`SELECT courier_id FROM Orders WHERE id = ?`, [orderId], (err, row) => {
+  // Обновление данных в таблице Orders
+  const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=? WHERE id=?';
+  db.run(queryOrder, [status, courier_id, address, orderId], function (err) {
     if (err) {
       console.error(err);
       res.status(500).json({ error: err.message });
       return;
     }
 
-    const previousCourierId = row ? row.courier_id : null;
-
-    // Обновление данных в таблице Orders
-    const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=? WHERE id=?';
-    db.run(queryOrder, [status, courier_id, address, orderId], function (err) {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-        return;
-      }
-
-      if (this.changes > 0) {
-        // Удаление номера заказа у предыдущего курьера, если он был
-        if (previousCourierId) {
-          db.run(`UPDATE Couriers SET order_number = NULL WHERE courier_id = ?`, [previousCourierId], function (err) {
-            if (err) {
-              console.error(err);
-              res.status(500).json({ error: err.message });
-              return;
-            }
-          });
-        }
-
-        res.json({ changes: this.changes });
-      } else {
-        res.status(500).json({ error: 'No changes made' });
-      }
-    });
+    if (this.changes > 0) {
+      res.json({ changes: this.changes });
+    } else {
+      res.status(500).json({ error: 'No changes made' });
+    }
   });
 });
-
-
 
 // Удаление данных из таблицы Orders по order_number
 app.delete('/orders/:order_number', (req, res) => {
