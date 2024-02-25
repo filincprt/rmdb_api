@@ -1092,7 +1092,7 @@ app.put('/orders/:id', (req, res) => {
     if (this.changes > 0) {
   console.log('Изменения в таблице Orders были успешно внесены.');
   // Проверка, было ли изменение статуса заказа на "Доставлен" или "Отменён"
-  if (status === 'Доставлен' || status === 'Отменён') {
+  if (status === 3 || status === 4) {
     console.log('Статус заказа был изменен на Доставлен или Отменён.');
     // Получаем информацию о курьере, назначенном на этот заказ
     const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
