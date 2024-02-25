@@ -1141,7 +1141,7 @@ const assignCourierToAnotherOrder = () => {
       return;
     }
 
-    // Если есть свободные активные курьеры, выбираем случайного и назначаем его на данный заказ
+    // Если есть свободные активные курьеры, выбираем случайного и назначаем его на другой заказ без курьера
     if (rows.length > 0) {
       const randomCourierIndex = Math.floor(Math.random() * rows.length);
       const randomCourierId = rows[randomCourierIndex].courier_id;
