@@ -1131,20 +1131,21 @@ app.put('/orders/:id', (req, res) => {
 });
 
 // Функция обновления информации о курьере
-const updateCourier = (orderNumber, courierId) => {
+const updateCourier = (orderNumber, courierId, callback) => {
   console.log('Обновление информации о курьере...');
   const queryUpdateCourier = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
   db.run(queryUpdateCourier, [orderNumber, courierId], function (err) {
     if (err) {
       console.error('Ошибка при обновлении информации о курьере:', err);
+      callback(err); // Вызываем обратный вызов с ошибкой
     } else {
       console.log('Информация о курьере успешно обновлена.');
+      callback(null); // Вызываем обратный вызов без ошибки
     }
   });
 };
 
-
-// Функция назначения курьера на другой заказ без курьера
+// Внесём изменения в вызов updateCourier внутри функции assignCourierToAnotherOrder
 const assignCourierToAnotherOrder = (orderId) => {
   // Получаем список свободных активных курьеров
   const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
@@ -1160,12 +1161,15 @@ const assignCourierToAnotherOrder = (orderId) => {
       const randomCourierId = rows[randomCourierIndex].courier_id;
 
       // Обновляем информацию о курьере в базе данных
-      updateCourier(orderId, randomCourierId, () => {
-        console.log(`Курьер ${randomCourierId} назначен на заказ ${orderId}`);
+      updateCourier(orderId, randomCourierId, (err) => { // Передаём обратный вызов в updateCourier
+        if (!err) {
+          console.log(`Курьер ${randomCourierId} назначен на заказ ${orderId}`);
+        }
       });
     }
   });
 };
+
 
 
 
