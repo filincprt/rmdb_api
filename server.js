@@ -1110,10 +1110,10 @@ app.put('/orders/:id', (req, res) => {
         console.log('Курьер был назначен на этот заказ.');
         // Обновляем информацию о курьере
         updateCourier(null, assignedCourierId, () => {
-          console.log('Информация о курьере успешно обновлена.');
-          // Назначаем курьера на другой заказ
-          assignCourierToAnotherOrder(orderId);
-        });
+        console.log('Информация о курьере успешно обновлена.');
+        // Назначаем курьера на другой заказ
+        assignCourierToAnotherOrder(orderId, assignedCourierId); // Передаем assignedCourierId в качестве второго аргумента
+      });
       } else {
         console.log('Курьер не был назначен на этот заказ.');
         res.json({ changes: this.changes });
