@@ -533,6 +533,65 @@ app.get('/couriers/:id', (req, res) => {
   });
 });
 
+//-----------------------------------------------------------------
+
+// Метод для уведомления случайных активных курьеров о новом заказе
+app.post('/notify_couriers', (req, res) => {
+  // Получаем список активных курьеров
+  const queryActiveCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1';
+  db.all(queryActiveCouriers, [], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    // Если нет активных курьеров, возвращаем сообщение об ошибке
+    if (rows.length === 0) {
+      res.status(400).json({ error: 'Нет активных курьеров для уведомления' });
+      return;
+    }
+
+    // Случайным образом выбираем курьера из списка
+    const randomCourierIndex = Math.floor(Math.random() * rows.length);
+    const randomCourierId = rows[randomCourierIndex].courier_id;
+
+    // Возвращаем ID выбранного курьера
+    res.json({ courier_id: randomCourierId });
+  });
+});
+
+
+app.post('/confirm_order/:orderId/:courierId', (req, res) => {
+  const orderId = req.params.orderId;
+  const courierId = req.params.courierId;
+
+  // Проверяем, существует ли заказ с указанным orderId и ему еще не назначен курьер
+  const queryCheckOrder = 'SELECT * FROM Orders WHERE id = ? AND courier_id IS NULL';
+  db.get(queryCheckOrder, [orderId], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    if (!row) {
+      res.status(400).json({ error: 'Заказ уже назначен другому курьеру или не существует' });
+      return;
+    }
+
+    // Обновляем поле courier_id для заказа
+    const updateOrderQuery = 'UPDATE Orders SET courier_id = ? WHERE id = ?';
+    db.run(updateOrderQuery, [courierId, orderId], function (err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+
+      res.json({ message: 'Заказ успешно подтвержден и назначен курьеру' });
+    });
+  });
+});
+
+//-----------------------------------------------------------------------------------------
 
 // Редактирование информации о курьере
 app.put('/couriers/:id', (req, res) => {
