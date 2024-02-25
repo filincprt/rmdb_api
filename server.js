@@ -976,7 +976,7 @@ app.post('/orders', (req, res) => {
     }
 
     // Если достаточное количество товара доступно, добавить заказ
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
     db.run(queryOrder, [user_id, order_number, delivery_time, status_id, address, courier_id, user_comment], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
