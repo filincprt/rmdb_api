@@ -1023,26 +1023,39 @@ app.post('/orders', (req, res) => {
   };
 
   // Функция добавления заказа в таблицу Orders
-  const addOrder = (orderNumber, courierId) => {
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+const addOrder = (orderNumber, courierId) => {
+  const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    const orderId = this.lastID;
+    const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+    db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
       if (err) {
         res.status(500).json({ error: err.message });
         return;
       }
 
-      const orderId = this.lastID;
-      const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-      db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-        if (err) {
-          res.status(500).json({ error: err.message });
-          return;
-        }
+      // Обновляем информацию о курьере в базе данных
+      updateCourier(orderNumber, courierId);
 
-        res.json({ id: orderId });
-      });
+      res.json({ id: orderId });
     });
-  };
+  });
+};
+
+// Функция обновления информации о курьере
+const updateCourier = (orderNumber, courierId) => {
+  const queryUpdateCourier = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
+  db.run(queryUpdateCourier, [orderNumber, courierId], function (err) {
+    if (err) {
+      console.error('Ошибка при обновлении информации о курьере:', err);
+    }
+  });
+};
 
   // Генерация номера заказа
   const generateOrderNumber = () => {
