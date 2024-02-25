@@ -1018,13 +1018,39 @@ app.put('/orders/:id', (req, res) => {
       return;
     }
 
+    // Если обновление выполнено успешно
     if (this.changes > 0) {
-      res.json({ changes: this.changes });
+      // Обновляем order_number для предыдущего и нового курьера
+      const queryUpdateCouriers = `
+        UPDATE Couriers
+        SET order_number = (
+          CASE
+            WHEN status_id IN (SELECT id FROM Status WHERE name IN ('Новый', 'В Сборке', 'В Пути')) THEN ?
+            WHEN status_id = (SELECT id FROM Status WHERE name = 'Отменён') THEN NULL
+          END
+        )
+        WHERE courier_id = ?`;
+      
+      db.run(queryUpdateCouriers, [orderId, courier_id, orderId], function (err) {
+        if (err) {
+          console.error(err);
+          res.status(500).json({ error: err.message });
+          return;
+        }
+
+        // Если обновление курьеров выполнено успешно
+        if (this.changes > 0) {
+          res.json({ changes: this.changes });
+        } else {
+          res.status(500).json({ error: 'No changes made to couriers' });
+        }
+      });
     } else {
-      res.status(500).json({ error: 'No changes made' });
+      res.status(500).json({ error: 'No changes made to orders' });
     }
   });
 });
+
 
 // Удаление данных из таблицы Orders по order_number
 app.delete('/orders/:order_number', (req, res) => {
