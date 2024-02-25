@@ -1145,8 +1145,7 @@ const updateCourier = (orderNumber, courierId, callback) => {
   });
 };
 
-// Внесём изменения в вызов updateCourier внутри функции assignCourierToAnotherOrder
-const assignCourierToAnotherOrder = (orderId) => {
+const assignCourierToAnotherOrder = (currentOrderId) => {
   // Получаем список свободных активных курьеров
   const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
   db.all(queryFreeCouriers, [], (err, rows) => {
@@ -1155,20 +1154,48 @@ const assignCourierToAnotherOrder = (orderId) => {
       return;
     }
 
-    // Если есть свободные активные курьеры, выбираем случайного и назначаем его на другой заказ без курьера
+    // Если есть свободные активные курьеры
     if (rows.length > 0) {
       const randomCourierIndex = Math.floor(Math.random() * rows.length);
       const randomCourierId = rows[randomCourierIndex].courier_id;
 
       // Обновляем информацию о курьере в базе данных
-      updateCourier(orderId, randomCourierId, (err) => { // Передаём обратный вызов в updateCourier
+      updateCourier(currentOrderId, randomCourierId, (err) => {
         if (!err) {
-          console.log(`Курьер ${randomCourierId} назначен на заказ ${orderId}`);
+          console.log(`Курьер ${randomCourierId} назначен на заказ ${currentOrderId}`);
+        }
+      });
+    } else {
+      console.log('Нет доступных курьеров. Поиск заказов без курьеров.');
+
+      // Поиск заказов без курьеров
+      const queryUnassignedOrders = 'SELECT id FROM Orders WHERE courier_id IS NULL';
+      db.all(queryUnassignedOrders, [], (err, unassignedOrders) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
+
+        // Если есть заказы без курьеров
+        if (unassignedOrders.length > 0) {
+          const randomOrderIndex = Math.floor(Math.random() * unassignedOrders.length);
+          const randomOrderId = unassignedOrders[randomOrderIndex].id;
+
+          // Назначаем случайный заказ на текущего курьера
+          updateCourier(randomOrderId, currentOrderId, (err) => {
+            if (!err) {
+              console.log(`Курьеру ${currentOrderId} назначен случайный заказ ${randomOrderId}`);
+            }
+          });
+        } else {
+          console.log('Нет заказов без курьеров.');
         }
       });
     }
   });
 };
+
+
 
 
 
