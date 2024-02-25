@@ -961,7 +961,7 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-  const { user_id, product_id, quantity, delivery_time, status_id, address, courier_id, user_comment } = req.body;
+  const { user_id, product_id, quantity, delivery_time, status_id, address, user_comment } = req.body;
 
   // Генерация номера заказа
   const generateOrderNumber = () => {
@@ -980,20 +980,22 @@ app.post('/orders', (req, res) => {
 
   // Функция добавления заказа с сгенерированным номером
   const addOrder = (orderNumber) => {
-    // Проверить наличие достаточного количества товара на складе
-    const checkAvailabilityQuery = 'SELECT quantity FROM Products WHERE id = ?';
-    db.get(checkAvailabilityQuery, [product_id], (err, row) => {
+    // Поиск подходящего курьера
+    const findCourierQuery = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL LIMIT 1';
+    db.get(findCourierQuery, [], (err, row) => {
       if (err) {
         res.status(500).json({ error: err.message });
         return;
       }
 
-      if (!row || row.quantity < quantity) {
-        res.status(400).json({ error: 'Недостаточное количество товара на складе' });
+      if (!row) {
+        res.status(400).json({ error: 'Нет доступных курьеров' });
         return;
       }
 
-      // Если достаточное количество товара доступно, добавить заказ
+      const courier_id = row.courier_id;
+      
+      // Если курьер найден, добавляем заказ
       const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
       db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courier_id, user_comment], function (err) {
         if (err) {
@@ -1009,7 +1011,16 @@ app.post('/orders', (req, res) => {
             return;
           }
 
-          res.json({ id: orderId });
+          // Обновляем номер заказа у курьера
+          const updateCourierQuery = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
+          db.run(updateCourierQuery, [orderNumber, courier_id], function (err) {
+            if (err) {
+              res.status(500).json({ error: err.message });
+              return;
+            }
+
+            res.json({ id: orderId });
+          });
         });
       });
     });
@@ -1018,6 +1029,7 @@ app.post('/orders', (req, res) => {
   // Генерировать номер заказа и добавить заказ
   generateOrderNumber();
 });
+
 
 
 // Редактирование данных в таблице Orders
