@@ -1075,7 +1075,6 @@ const updateCourier = (orderNumber, courierId) => {
 });
 
 
-
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
@@ -1091,48 +1090,60 @@ app.put('/orders/:id', (req, res) => {
     }
 
     if (this.changes > 0) {
-      // Проверка, было ли изменение статуса заказа на "Доставлен" или "Отменён"
-      if (status === 'Доставлен' || status === 'Отменён') {
-        // Получаем информацию о курьере, назначенном на этот заказ
-        const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
-        db.get(queryGetCourier, [orderId], (err, row) => {
-          if (err) {
-            console.error(err);
-            res.status(500).json({ error: err.message });
-            return;
-          }
+  console.log('Изменения в таблице Orders были успешно внесены.');
+  // Проверка, было ли изменение статуса заказа на "Доставлен" или "Отменён"
+  if (status === 'Доставлен' || status === 'Отменён') {
+    console.log('Статус заказа был изменен на Доставлен или Отменён.');
+    // Получаем информацию о курьере, назначенном на этот заказ
+    const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
+    db.get(queryGetCourier, [orderId], (err, row) => {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+        return;
+      }
 
-          // Если курьер был назначен на этот заказ, освободить его
-          const assignedCourierId = row.courier_id;
-          if (assignedCourierId !== null) {
-            // Обновляем информацию о курьере
-            updateCourier(null, assignedCourierId);
-
-            // Назначаем курьера на другой заказ
-            assignCourierToAnotherOrder();
-          }
+      // Если курьер был назначен на этот заказ, освободить его
+      const assignedCourierId = row.courier_id;
+      console.log('ID назначенного курьера:', assignedCourierId);
+      if (assignedCourierId !== null) {
+        console.log('Курьер был назначен на этот заказ.');
+        // Обновляем информацию о курьере
+        updateCourier(null, assignedCourierId, () => {
+          console.log('Информация о курьере успешно обновлена.');
+          // Назначаем курьера на другой заказ
+          assignCourierToAnotherOrder(orderId);
         });
       } else {
+        console.log('Курьер не был назначен на этот заказ.');
         res.json({ changes: this.changes });
       }
-    } else {
-      res.status(500).json({ error: 'No changes made' });
-    }
+    });
+  } else {
+    console.log('Статус заказа не был изменен на Доставлен или Отменён.');
+    res.json({ changes: this.changes });
+  }
+} else {
+  console.log('Изменения в таблице Orders не были внесены.');
+  res.status(500).json({ error: 'No changes made' });
+}
   });
 });
 
 // Функция обновления информации о курьере
-const updateCourier = (orderNumber, courierId) => {
+const updateCourier = (orderNumber, courierId, callback) => {
   const queryUpdateCourier = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
   db.run(queryUpdateCourier, [orderNumber, courierId], function (err) {
     if (err) {
       console.error('Ошибка при обновлении информации о курьере:', err);
     }
+    // Вызываем callback после выполнения запроса
+    callback();
   });
 };
 
 // Функция назначения курьера на другой заказ без курьера
-const assignCourierToAnotherOrder = () => {
+const assignCourierToAnotherOrder = (orderId) => {
   // Получаем список свободных активных курьеров
   const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
   db.all(queryFreeCouriers, [], (err, rows) => {
@@ -1147,11 +1158,12 @@ const assignCourierToAnotherOrder = () => {
       const randomCourierId = rows[randomCourierIndex].courier_id;
 
       // Обновляем информацию о курьере в базе данных
-      updateCourier(orderId, randomCourierId);
+      updateCourier(orderId, randomCourierId, () => {
+        console.log(`Курьер ${randomCourierId} назначен на заказ ${orderId}`);
+      });
     }
   });
 };
-
 
 
 
