@@ -961,41 +961,62 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-  const { user_id, product_id, quantity, order_number, delivery_time, status_id, address, courier_id, user_comment } = req.body;
+  const { user_id, product_id, quantity, delivery_time, status_id, address, courier_id, user_comment } = req.body;
 
-  // Проверить наличие достаточного количества товара на складе
-  const checkAvailabilityQuery = 'SELECT quantity FROM Products WHERE id = ?';
-  db.get(checkAvailabilityQuery, [product_id], (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
+  // Генерация номера заказа
+  const generateOrderNumber = () => {
+    const queryLastOrderNumber = 'SELECT MAX(CAST(order_number AS INTEGER)) AS last_order_number FROM Orders';
+    db.get(queryLastOrderNumber, [], (err, row) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
+      const nextOrderNumber = ('00000000' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
+      addOrder(nextOrderNumber); // Добавление заказа с сгенерированным номером
+    });
+  };
 
-    if (!row || row.quantity < quantity) {
-      res.status(400).json({ error: 'Недостаточное количество товара на складе' });
-      return;
-    }
+  // Функция добавления заказа с сгенерированным номером
+  const addOrder = (orderNumber) => {
+    // Проверить наличие достаточного количества товара на складе
+    const checkAvailabilityQuery = 'SELECT quantity FROM Products WHERE id = ?';
+    db.get(checkAvailabilityQuery, [product_id], (err, row) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
 
-    // Если достаточное количество товара доступно, добавить заказ
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.run(queryOrder, [user_id, order_number, delivery_time, status_id, address, courier_id, user_comment], function (err) {
+      if (!row || row.quantity < quantity) {
+        res.status(400).json({ error: 'Недостаточное количество товара на складе' });
+        return;
+      }
+
+      // Если достаточное количество товара доступно, добавить заказ
+      const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
+      db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courier_id, user_comment], function (err) {
         if (err) {
-            res.status(500).json({ error: err.message });
-            return;
+          res.status(500).json({ error: err.message });
+          return;
         }
 
         const orderId = this.lastID;
         const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
         db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
+          if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+          }
 
-            res.json({ id: orderId });
+          res.json({ id: orderId });
         });
+      });
     });
-  });
+  };
+
+  // Генерировать номер заказа и добавить заказ
+  generateOrderNumber();
 });
 
 
@@ -1013,35 +1034,10 @@ app.put('/orders/:id', (req, res) => {
       return;
     }
 
-    // Если обновление выполнено успешно
     if (this.changes > 0) {
-      // Обновляем order_number для предыдущего и нового курьера
-      const queryUpdateCouriers = `
-        UPDATE Couriers
-        SET order_number = (
-          CASE
-            WHEN status_id IN (SELECT id FROM Status WHERE name IN ('Новый', 'В Сборке', 'В Пути')) THEN ?
-            WHEN status_id = (SELECT id FROM Status WHERE name = 'Отменён') THEN NULL
-          END
-        )
-        WHERE courier_id = ?`;
-      
-      db.run(queryUpdateCouriers, [orderId, courier_id, orderId], function (err) {
-        if (err) {
-          console.error(err);
-          res.status(500).json({ error: err.message });
-          return;
-        }
-
-        // Если обновление курьеров выполнено успешно
-        if (this.changes > 0) {
-          res.json({ changes: this.changes });
-        } else {
-          res.status(500).json({ error: 'No changes made to couriers' });
-        }
-      });
+      res.json({ changes: this.changes });
     } else {
-      res.status(500).json({ error: 'No changes made to orders' });
+      res.status(500).json({ error: 'No changes made' });
     }
   });
 });
