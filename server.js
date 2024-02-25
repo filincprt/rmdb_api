@@ -1146,57 +1146,48 @@ const updateCourier = (orderNumber, courierId, callback) => {
 };
 
 const assignCourierToAnotherOrder = (currentOrderId) => {
-  // Получаем список свободных активных курьеров
-  const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
-  db.all(queryFreeCouriers, [], (err, rows) => {
+  // Получаем информацию о текущем курьере
+  const queryCourier = 'SELECT * FROM Couriers WHERE courier_id = ?';
+  db.get(queryCourier, [currentOrderId], (err, courier) => {
     if (err) {
       console.error(err);
       return;
     }
 
-    // Если есть свободные активные курьеры
-    if (rows.length > 0) {
-      const randomCourierIndex = Math.floor(Math.random() * rows.length);
-      const randomCourierId = rows[randomCourierIndex].courier_id;
-
-      // Обновляем информацию о курьере в базе данных
-      updateCourier(currentOrderId, randomCourierId, (err) => {
-        if (!err) {
-          console.log(`Курьер ${randomCourierId} назначен на заказ ${currentOrderId}`);
-        }
-      });
-    } else {
-      console.log('Нет доступных курьеров. Поиск заказов без курьеров.');
-
-      // Поиск заказов без курьеров
-      const queryUnassignedOrders = 'SELECT id FROM Orders WHERE courier_id IS NULL';
-      db.all(queryUnassignedOrders, [], (err, unassignedOrders) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
-
-        // Если есть заказы без курьеров
-        if (unassignedOrders.length > 0) {
-          const randomOrderIndex = Math.floor(Math.random() * unassignedOrders.length);
-          const randomOrderId = unassignedOrders[randomOrderIndex].id;
-
-          // Назначаем случайный заказ на текущего курьера
-          updateCourier(randomOrderId, currentOrderId, (err) => {
-            if (!err) {
-              console.log(`Курьеру ${currentOrderId} назначен случайный заказ ${randomOrderId}`);
-            }
-          });
-        } else {
-          console.log('Нет заказов без курьеров.');
-        }
-      });
+    // Если курьер не найден
+    if (!courier) {
+      console.log(`Курьер с ID ${currentOrderId} не найден.`);
+      return;
     }
+
+    // Поиск ближайшего свободного заказа
+    const queryNearestOrder = `
+      SELECT id FROM Orders
+      WHERE courier_id IS NULL
+      ORDER BY ABS(DATEDIFF('now', created_at))
+      LIMIT 1
+    `;
+    db.get(queryNearestOrder, [], (err, nearestOrder) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+
+      // Если ближайший заказ найден
+      if (nearestOrder) {
+        const nearestOrderId = nearestOrder.id;
+        // Назначаем ближайший заказ текущему курьеру
+        updateCourier(nearestOrderId, currentOrderId, (err) => {
+          if (!err) {
+            console.log(`Курьеру ${currentOrderId} назначен ближайший заказ ${nearestOrderId}`);
+          }
+        });
+      } else {
+        console.log('Нет доступных заказов для назначения.');
+      }
+    });
   });
 };
-
-
-
 
 
 
