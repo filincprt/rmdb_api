@@ -1133,24 +1133,25 @@ const updateCourier = (orderNumber, courierId) => {
 
 // Функция назначения курьера на другой заказ без курьера
 const assignCourierToAnotherOrder = () => {
-  // Получаем список заказов без курьера
-  const queryGetOrdersWithoutCourier = 'SELECT id FROM Orders WHERE courier_id IS NULL';
-  db.all(queryGetOrdersWithoutCourier, [], (err, rows) => {
+  // Получаем список свободных активных курьеров
+  const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
+  db.all(queryFreeCouriers, [], (err, rows) => {
     if (err) {
       console.error(err);
       return;
     }
 
-    // Если есть заказы без курьера, выбираем случайный заказ и назначаем на него курьера
+    // Если есть свободные активные курьеры, выбираем случайного и назначаем его на данный заказ
     if (rows.length > 0) {
-      const randomOrderIndex = Math.floor(Math.random() * rows.length);
-      const randomOrderId = rows[randomOrderIndex].id;
+      const randomCourierIndex = Math.floor(Math.random() * rows.length);
+      const randomCourierId = rows[randomCourierIndex].courier_id;
 
-      // Обновляем информацию о курьере
-      updateCourier(randomOrderId, courier_id);
+      // Обновляем информацию о курьере в базе данных
+      updateCourier(orderId, randomCourierId);
     }
   });
 };
+
 
 
 
