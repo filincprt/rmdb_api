@@ -762,7 +762,7 @@ app.delete('/products/:id', (req, res) => {
 //-------------------------ProductShipments------------------------------
 
 // GET all product shipments
-post.get('/product-shipments', (req, res) => {
+app.get('/product-shipments', (req, res) => {
     db.all(`SELECT ps.id, p.name AS product_name, ps.shipment_number, ps.quantity_received, ps.shipment_date, ps.expiry_date, s.name AS supplier_name
             FROM ProductShipments ps
             INNER JOIN Products p ON ps.product_id = p.id
@@ -777,7 +777,7 @@ post.get('/product-shipments', (req, res) => {
 });
 
 // POST a new product shipment
-post.post('/product-shipments', (req, res) => {
+app.post('/product-shipments', (req, res) => {
     const { product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id } = req.body;
     db.run(`INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id)
             VALUES (?, ?, ?, ?, ?, ?)`, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
@@ -791,7 +791,7 @@ post.post('/product-shipments', (req, res) => {
 });
 
 // PUT (update) a product shipment
-post.put('/product-shipments/:id', (req, res) => {
+app.put('/product-shipments/:id', (req, res) => {
     const id = req.params.id;
     const { product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id } = req.body;
     db.run(`UPDATE ProductShipments
@@ -805,8 +805,6 @@ post.put('/product-shipments/:id', (req, res) => {
         }
     });
 });
-
-
 
 //----------------------CATEGORY-----------------------------
 
