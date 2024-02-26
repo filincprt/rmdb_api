@@ -759,6 +759,53 @@ app.delete('/products/:id', (req, res) => {
 });
 
 
+//-------------------------ProductShipments------------------------------
+
+// GET all product shipments
+post.get('/product-shipments', (req, res) => {
+    db.all(`SELECT ps.id, p.name AS product_name, ps.shipment_number, ps.quantity_received, ps.shipment_date, ps.expiry_date, s.name AS supplier_name
+            FROM ProductShipments ps
+            INNER JOIN Products p ON ps.product_id = p.id
+            INNER JOIN Supplier s ON ps.supplier_id = s.id`, (err, rows) => {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Internal Server Error');
+        } else {
+            res.json(rows);
+        }
+    });
+});
+
+// POST a new product shipment
+post.post('/product-shipments', (req, res) => {
+    const { product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id } = req.body;
+    db.run(`INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id)
+            VALUES (?, ?, ?, ?, ?, ?)`, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Internal Server Error');
+        } else {
+            res.json({ id: this.lastID });
+        }
+    });
+});
+
+// PUT (update) a product shipment
+post.put('/product-shipments/:id', (req, res) => {
+    const id = req.params.id;
+    const { product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id } = req.body;
+    db.run(`UPDATE ProductShipments
+            SET product_id = ?, shipment_number = ?, quantity_received = ?, shipment_date = ?, expiry_date = ?, supplier_id = ?
+            WHERE id = ?`, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id, id], function (err) {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Internal Server Error');
+        } else {
+            res.json({ message: `Product shipment ${id} updated successfully` });
+        }
+    });
+});
+
 
 
 //----------------------CATEGORY-----------------------------
