@@ -21,8 +21,27 @@ const db = new sqlite3.Database("./DATABASE_IS_SERVER.db");
 const fs = require('fs');
 const path = require('path');
 
-// Эндпоинт для отправки файла базы данных
+// Заглушка для проверки пароля (замените на свою реализацию)
+const checkPassword = (password) => {
+    return password === 'your_password';
+};
+
+// Эндпоинт для отправки файла базы данных с запросом пароля
 app.get('/database', (req, res) => {
+    // Проверяем, был ли предоставлен пароль в запросе
+    const password = req.query.password;
+    if (!password) {
+        // Если пароль не был предоставлен, возвращаем ошибку
+        return res.status(401).json({ error: 'Unauthorized: Password is required' });
+    }
+
+    // Проверяем корректность пароля
+    if (!checkPassword(password)) {
+        // Если пароль неверен, возвращаем ошибку
+        return res.status(401).json({ error: 'Unauthorized: Incorrect password' });
+    }
+
+    // Получаем путь к файлу базы данных
     const dbFilePath = path.join(__dirname, 'DATABASE_IS_SERVER.db');
 
     // Проверяем существует ли файл базы данных
@@ -41,6 +60,7 @@ app.get('/database', (req, res) => {
 });
 
 
+//-----------------------------------------------------------------
 
 
 // Редактирование заказа с возможностью обновления и удаления товаров
