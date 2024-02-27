@@ -825,32 +825,50 @@ app.get('/product-shipments', (req, res) => {
 });
 
 
-// POST a new product shipment
 app.post('/product-shipments', (req, res) => {
     console.log('POST /product-shipments requested');
-    const { product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id } = req.body;
+    const { shipment_info, products } = req.body;
+
+    // Проверяем наличие необходимых данных в запросе
+    if (!shipment_info || !products || !Array.isArray(products) || products.length === 0) {
+        return res.status(400).json({ error: 'Invalid request: Missing shipment_info or products array' });
+    }
+
+    // Извлекаем информацию о поставке
+    const { shipment_number, shipment_date, expiry_date, supplier_id } = shipment_info;
+
+    // Создаем SQL-запрос для вставки данных
     const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?)';
-    db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
-        if (err) {
-            console.error(err.message);
-            res.status(500).json({ error: 'Internal Server Error' });
-        } else {
-            console.log('New product shipment added with ID:', this.lastID);
-            // Fetch the updated list of product shipments after addition
-            db.all(`SELECT ps.id, p.name AS product_name, ps.shipment_number, ps.quantity_received, ps.shipment_date, ps.expiry_date, s.name AS supplier_name
-                    FROM ProductShipments ps
-                    INNER JOIN Products p ON ps.product_id = p.id
-                    INNER JOIN Supplier s ON ps.supplier_id = s.id`, (err, rows) => {
+    
+    // Используем транзакцию для вставки данных о каждом товаре
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        products.forEach((product, index) => {
+            const { product_id, quantity_received } = product;
+            db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
                 if (err) {
                     console.error(err.message);
+                    res.status(500).json({ error: 'Internal Server Error' });
+                    return;
                 } else {
-                    console.log('Updated product shipments data:', rows);
+                    console.log(`New product shipment added with ID ${this.lastID}`);
+                    // Если это последний товар, фиксируем транзакцию и возвращаем ответ
+                    if (index === products.length - 1) {
+                        db.run('COMMIT', (err) => {
+                            if (err) {
+                                console.error(err.message);
+                                res.status(500).json({ error: 'Internal Server Error' });
+                            } else {
+                                res.json({ message: 'Product shipments added successfully' });
+                            }
+                        });
+                    }
                 }
             });
-            res.json({ id: this.lastID });
-        }
+        });
     });
 });
+
 
 
 
