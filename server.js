@@ -878,13 +878,12 @@ app.put('/product-shipments/:id', (req, res) => {
 app.get('/suppliers', (req, res) => {
     db.all('SELECT * FROM Supplier', (err, rows) => {
         if (err) {
-            console.error(err.message);
-            res.status(500).send('Internal Server Error');
-        } else {
-            res.json(rows);
-        }
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json({ categories: rows });
     });
-});
+  });
 
 // Метод для добавления нового поставщика
 app.post('/suppliers', (req, res) => {
