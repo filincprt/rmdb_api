@@ -806,6 +806,62 @@ app.put('/product-shipments/:id', (req, res) => {
     });
 });
 
+//----------------------Shipments---------------------------
+
+
+// Метод для просмотра списка всех поставщиков
+app.get('/suppliers', (req, res) => {
+    db.all('SELECT * FROM Supplier', (err, rows) => {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Internal Server Error');
+        } else {
+            res.json(rows);
+        }
+    });
+});
+
+// Метод для добавления нового поставщика
+app.post('/suppliers', (req, res) => {
+    const { name, contact_person, contact_number, email } = req.body;
+    db.run(`INSERT INTO Supplier (name, contact_person, contact_number, email) VALUES (?, ?, ?, ?)`, [name, contact_person, contact_number, email], function (err) {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Internal Server Error');
+        } else {
+            res.json({ id: this.lastID });
+        }
+    });
+});
+
+// Метод для редактирования информации о поставщике
+app.put('/suppliers/:id', (req, res) => {
+    const id = req.params.id;
+    const { name, contact_person, contact_number, email } = req.body;
+    db.run(`UPDATE Supplier SET name = ?, contact_person = ?, contact_number = ?, email = ? WHERE id = ?`, [name, contact_person, contact_number, email, id], function (err) {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Internal Server Error');
+        } else {
+            res.json({ message: 'Supplier updated successfully' });
+        }
+    });
+});
+
+// Метод для удаления поставщика по идентификатору
+app.delete('/suppliers/:id', (req, res) => {
+    const id = req.params.id;
+    db.run(`DELETE FROM Supplier WHERE id = ?`, [id], function (err) {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Internal Server Error');
+        } else {
+            res.json({ message: 'Supplier deleted successfully' });
+        }
+    });
+});
+
+
 //----------------------CATEGORY-----------------------------
 
 // Получение данных из таблицы Categories
