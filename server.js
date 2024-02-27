@@ -769,12 +769,13 @@ app.get('/product-shipments', (req, res) => {
             INNER JOIN Supplier s ON ps.supplier_id = s.id`, (err, rows) => {
         if (err) {
             console.error(err.message);
-            res.status(500).send('Internal Server Error');
+            res.status(500).json({ error: 'Internal Server Error' });
         } else {
             res.json(rows);
         }
     });
 });
+
 
 // POST a new product shipment
 app.post('/product-shipments', (req, res) => {
@@ -783,7 +784,7 @@ app.post('/product-shipments', (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?)`, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
         if (err) {
             console.error(err.message);
-            res.status(500).send('Internal Server Error');
+            res.status(500).json({ error: 'Internal Server Error' });
         } else {
             res.json({ id: this.lastID });
         }
