@@ -1,4 +1,4 @@
-const express = require('express');
+ const express = require('express');
 const sqlite3 = require('sqlite3');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
@@ -780,8 +780,8 @@ app.get('/product-shipments', (req, res) => {
 // POST a new product shipment
 app.post('/product-shipments', (req, res) => {
     const { product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id } = req.body;
-    db.run(`INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id)
-            VALUES (?, ?, ?, ?, ?, ?)`, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
+    const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?)';
+    db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
         if (err) {
             console.error(err.message);
             res.status(500).json({ error: 'Internal Server Error' });
@@ -790,6 +790,9 @@ app.post('/product-shipments', (req, res) => {
         }
     });
 });
+
+
+
 
 // PUT (update) a product shipment
 app.put('/product-shipments/:id', (req, res) => {
