@@ -763,6 +763,7 @@ app.delete('/products/:id', (req, res) => {
 
 // GET all product shipments
 app.get('/product-shipments', (req, res) => {
+    console.log('GET /product-shipments requested');
     db.all(`SELECT ps.id, p.name AS product_name, ps.shipment_number, ps.quantity_received, ps.shipment_date, ps.expiry_date, s.name AS supplier_name
             FROM ProductShipments ps
             INNER JOIN Products p ON ps.product_id = p.id
@@ -771,6 +772,7 @@ app.get('/product-shipments', (req, res) => {
             console.error(err.message);
             res.status(500).json({ error: 'Internal Server Error' });
         } else {
+            console.log('Sending product shipments data:', rows);
             res.json(rows);
         }
     });
@@ -779,6 +781,7 @@ app.get('/product-shipments', (req, res) => {
 
 // POST a new product shipment
 app.post('/product-shipments', (req, res) => {
+    console.log('POST /product-shipments requested');
     const { product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id } = req.body;
     const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?)';
     db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
@@ -786,6 +789,18 @@ app.post('/product-shipments', (req, res) => {
             console.error(err.message);
             res.status(500).json({ error: 'Internal Server Error' });
         } else {
+            console.log('New product shipment added with ID:', this.lastID);
+            // Fetch the updated list of product shipments after addition
+            db.all(`SELECT ps.id, p.name AS product_name, ps.shipment_number, ps.quantity_received, ps.shipment_date, ps.expiry_date, s.name AS supplier_name
+                    FROM ProductShipments ps
+                    INNER JOIN Products p ON ps.product_id = p.id
+                    INNER JOIN Supplier s ON ps.supplier_id = s.id`, (err, rows) => {
+                if (err) {
+                    console.error(err.message);
+                } else {
+                    console.log('Updated product shipments data:', rows);
+                }
+            });
             res.json({ id: this.lastID });
         }
     });
