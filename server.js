@@ -16,11 +16,37 @@ app.use(express.json({ limit: '50mb' }));
 const db = new sqlite3.Database("./DATABASE_IS_SERVER.db");
  // Путь к вашей базе данных
 
+
+
+const fs = require('fs');
+const path = require('path');
+
+// Эндпоинт для отправки файла базы данных
+app.get('/database', (req, res) => {
+    const dbFilePath = path.join(__dirname, 'DATABASE_IS_SERVER.db');
+
+    // Проверяем существует ли файл базы данных
+    if (fs.existsSync(dbFilePath)) {
+        // Отправляем файл как ответ на запрос
+        res.download(dbFilePath, 'DATABASE_IS_SERVER.db', (err) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
+        });
+    } else {
+        // Если файл не существует, возвращаем ошибку
+        res.status(404).json({ error: 'Database file not found' });
+    }
+});
+
+
+
+
 // Редактирование заказа с возможностью обновления и удаления товаров
 app.put('/orders/update/:id', (req, res) => {
   const orderId = req.params.id;
   const orderDetails = req.body;
-
   // Обновление данных в таблице Orders
   const queryOrder = 'UPDATE Orders SET status_id=? WHERE id=?';
   db.run(queryOrder, [orderDetails.status, orderId], function (err) {
