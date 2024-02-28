@@ -690,11 +690,11 @@ app.post('/courier_login', (req, res) => {
 // Получение всех товаров с названиями категорий
 app.get('/products', (req, res) => {
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, U.is_available as is_available
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
-    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
+    JOIN ProductAvailabilityInShowcase PA ON P.id = PA.product_id
   `;
 
   db.all(query, (err, rows) => {
@@ -712,11 +712,11 @@ app.get('/products/:id', (req, res) => {
   const productId = req.params.id;
 
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.quantity, P.units_id, P.barcode, P.image_resource, P.category_id, C.nameCategory as category_name, U.name as unit_name, U.is_available as is_available
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.quantity, P.units_id, P.barcode, P.image_resource, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
-    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
+    JOIN ProductAvailabilityInShowcase PA ON P.id = PA.product_id
     WHERE P.id = ?
   `;
 
@@ -738,7 +738,7 @@ app.get('/products/:id', (req, res) => {
 // Получение витринных товаров
 app.get('/showcase-products', (req, res) => {
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, , U.is_available as is_available
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, , PA.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
@@ -760,7 +760,7 @@ app.get('/showcase-products', (req, res) => {
 // Обновление статуса доступности товара
 app.put('/products/:productId/availability', (req, res) => {
   const productId = req.params.productId;
-  const isAvailable = req.body.is_available; // предполагается, что клиент отправляет тело запроса с параметром is_available
+  const isAvailable = req.body.is_available; 
 
   const query = `
     UPDATE ProductAvailabilityInShowcase
@@ -783,11 +783,11 @@ app.put('/products/:productId/availability', (req, res) => {
 app.get('/products/category/:category_id', (req, res) => {
   const categoryId = req.params.category_id;
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.category_id, C.nameCategory as category_name, U.name as unit_name, U.is_available as is_available
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
-    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
+    JOIN ProductAvailabilityInShowcase PA ON P.id = PA.product_id
     WHERE P.category_id = ?
   `;
 
