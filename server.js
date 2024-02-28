@@ -733,6 +733,28 @@ app.get('/products/:id', (req, res) => {
   });
 });
 
+// Получение всех доступных товаров с названиями категорий
+app.get('/showcase-products', (req, res) => {
+  const query = `
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name
+    FROM Products P
+    LEFT JOIN Category C ON P.category_id = C.id
+    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
+    JOIN ProductAvailabilityInShowcase PA ON P.id = PA.product_id
+    WHERE PA.is_available = 1
+  `;
+
+  db.all(query, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+   
+    res.json({ products: rows });
+  });
+});
+
+
 // Получение товаров по категории с названиями категорий
 app.get('/products/category/:category_id', (req, res) => {
   const categoryId = req.params.category_id;
