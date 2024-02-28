@@ -649,7 +649,6 @@ app.delete('/couriers/:id', (req, res) => {
     stmt.finalize();
 });
 
-
 app.post('/courier_register', (req, res) => {
     const { first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier } = req.body;
 
@@ -691,9 +690,10 @@ app.post('/courier_login', (req, res) => {
 // Получение всех товаров с названиями категорий
 app.get('/products', (req, res) => {
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.barcode, P.category_id, C.nameCategory as category_name
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
+    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
   `;
 
   db.all(query, (err, rows) => {
@@ -706,15 +706,15 @@ app.get('/products', (req, res) => {
   });
 });
 
-
 // Получение данных о товаре по его ID без image_data
 app.get('/products/:id', (req, res) => {
   const productId = req.params.id;
 
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.quantity, P.barcode, P.image_resource, P.category_id, C.nameCategory as category_name
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.quantity, P.barcode, P.image_resource, P.category_id, C.nameCategory as category_name, U.name as unit_name
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
+    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     WHERE P.id = ?
   `;
 
@@ -733,14 +733,14 @@ app.get('/products/:id', (req, res) => {
   });
 });
 
-
 // Получение товаров по категории с названиями категорий
 app.get('/products/category/:category_id', (req, res) => {
   const categoryId = req.params.category_id;
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.category_id, C.nameCategory as category_name
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.category_id, C.nameCategory as category_name, U.name as unit_name
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
+    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     WHERE P.category_id = ?
   `;
 
@@ -754,18 +754,17 @@ app.get('/products/category/:category_id', (req, res) => {
   });
 });
 
-
 // Редактирование продукта
 app.put('/products/:id', (req, res) => {
   const productId = req.params.id;
-  const { name, price, color_primary, color_light, description, category_id, quantity, barcode, image_resource } = req.body;
+  const { name, price, color_primary, color_light, description, category_id, units_id, quantity, barcode, image_resource } = req.body;
 
   const query = `
     UPDATE Products 
-    SET name=?, image_resource=?, price=?, color_primary=?, color_light=?, description=?, category_id=?, quantity=?, barcode=?
+    SET name=?, image_resource=?, price=?, color_primary=?, color_light=?, description=?, category_id=?, units_id=?, quantity=?, barcode=?
     WHERE id=?
   `;
-  db.run(query, [name, image_resource, price, color_primary, color_light, description, category_id, quantity, barcode, productId], function (err) {
+  db.run(query, [name, image_resource, price, color_primary, color_light, description, category_id, units_id, quantity, barcode, productId], function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -774,14 +773,12 @@ app.put('/products/:id', (req, res) => {
   });
 });
 
-
-
 // Добавление продукта
 app.post('/products', (req, res) => {
-  const { name, price, color_primary, color_light, description, category_id, quantity, barcode } = req.body;
+  const { name, price, color_primary, color_light, description, category_id, units_id, quantity, barcode } = req.body;
 
-  const query = 'INSERT INTO Products (name, image_resource, price, color_primary, color_light, description, category_id, quantity, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.run(query, [name, price, color_primary, color_light, description, category_id, quantity, barcode], function (err) {
+  const query = 'INSERT INTO Products (name, image_resource, price, color_primary, color_light, description, category_id, units_id, quantity, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.run(query, [name, price, color_primary, color_light, description, category_id, units_id, quantity, barcode], function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -789,7 +786,6 @@ app.post('/products', (req, res) => {
     res.json({ id: this.lastID });
   });
 });
-
 
 // Удаление продукта
 app.delete('/products/:id', (req, res) => {
@@ -823,7 +819,6 @@ app.get('/product-shipments', (req, res) => {
         }
     });
 });
-
 
 app.post('/product-shipments', (req, res) => {
     console.log('POST /product-shipments requested');
@@ -866,11 +861,6 @@ app.post('/product-shipments', (req, res) => {
         });
     });
 });
-
-
-
-
-
 
 // PUT (update) a product shipment
 app.put('/product-shipments/:id', (req, res) => {
@@ -942,6 +932,44 @@ app.delete('/suppliers/:id', (req, res) => {
     });
 });
 
+//-----------------UnitsOfMeasurement------------------------
+
+// Получение данных из таблицы UnitsOfMeasurement
+app.get('/unitsmeasurment', (req, res) => {
+    db.all('SELECT * FROM UnitsOfMeasurement', (err, rows) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json({ categories: rows });
+    });
+  });
+
+ // Добавление данных в таблицу UnitsOfMeasurement
+  app.post('/unitsmeasurment', (req, res) => {
+    const { name } = req.body;
+    const query = 'INSERT INTO UnitsOfMeasurement (name) VALUES (?)';
+    db.run(query, [name], function (err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json({ id: this.lastID });
+    });
+  });
+
+// Удаление ед. измерения
+app.delete('/unitsmeasurment/:id', (req, res) => {
+  const unitId = req.params.id;
+  const query = 'DELETE FROM UnitsOfMeasurement WHERE id=?';
+  db.run(query, [unitId], function (err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({ deleted: this.changes });
+  });
+});
 
 //----------------------CATEGORY-----------------------------
 
