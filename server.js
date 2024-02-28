@@ -835,16 +835,14 @@ app.post('/product-shipments', (req, res) => {
     }
 
     // Извлекаем информацию о поставке
-    const { shipment_number, shipment_date, expiry_date, supplier_id } = shipment_info;
+    const { shipment_number, shipment_date, supplier_id } = shipment_info;
 
-    // Создаем SQL-запрос для вставки данных
-    const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?)';
-    
     // Используем транзакцию для вставки данных о каждом товаре
     db.serialize(() => {
         db.run('BEGIN TRANSACTION');
         products.forEach((product, index) => {
-            const { product_id, quantity_received } = product;
+            const { product_id, quantity_received, expiry_date } = product;
+            const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?)';
             db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
                 if (err) {
                     console.error(err.message);
@@ -868,6 +866,7 @@ app.post('/product-shipments', (req, res) => {
         });
     });
 });
+
 
 
 
