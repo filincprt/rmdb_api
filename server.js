@@ -743,7 +743,6 @@ app.get('/showcase-products', (req, res) => {
     LEFT JOIN Category C ON P.category_id = C.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     JOIN ProductAvailabilityInShowcase PA ON P.id = PA.product_id
-    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     WHERE PA.is_available = 1
   `;
 
