@@ -1,4 +1,4 @@
- const express = require('express');
+const express = require('express');
 const sqlite3 = require('sqlite3');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
@@ -738,7 +738,7 @@ app.get('/products/:id', (req, res) => {
 // Получение витринных товаров
 app.get('/showcase-products', (req, res) => {
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, , PA.is_available as is_available
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
