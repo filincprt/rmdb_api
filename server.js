@@ -690,9 +690,10 @@ app.post('/courier_login', (req, res) => {
 // Получение всех товаров с названиями категорий
 app.get('/products', (req, res) => {
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, U.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
+    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
   `;
 
@@ -711,9 +712,10 @@ app.get('/products/:id', (req, res) => {
   const productId = req.params.id;
 
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.quantity, P.units_id, P.barcode, P.image_resource, P.category_id, C.nameCategory as category_name, U.name as unit_name
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.quantity, P.units_id, P.barcode, P.image_resource, P.category_id, C.nameCategory as category_name, U.name as unit_name, U.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
+    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     WHERE P.id = ?
   `;
@@ -736,11 +738,12 @@ app.get('/products/:id', (req, res) => {
 // Получение витринных товаров
 app.get('/showcase-products', (req, res) => {
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, , U.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     JOIN ProductAvailabilityInShowcase PA ON P.id = PA.product_id
+    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     WHERE PA.is_available = 1
   `;
 
@@ -780,9 +783,10 @@ app.put('/products/:productId/availability', (req, res) => {
 app.get('/products/category/:category_id', (req, res) => {
   const categoryId = req.params.category_id;
   const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.category_id, C.nameCategory as category_name, U.name as unit_name
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.category_id, C.nameCategory as category_name, U.name as unit_name, U.is_available as is_available
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
+    LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
     WHERE P.category_id = ?
   `;
@@ -796,6 +800,7 @@ app.get('/products/category/:category_id', (req, res) => {
     res.json({ products: rows });
   });
 });
+
 
 // Редактирование продукта
 app.put('/products/:id', (req, res) => {
