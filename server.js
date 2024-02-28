@@ -733,7 +733,7 @@ app.get('/products/:id', (req, res) => {
   });
 });
 
-// Получение всех доступных товаров с названиями категорий
+// Получение витринных товаров
 app.get('/showcase-products', (req, res) => {
   const query = `
     SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name
@@ -751,6 +751,27 @@ app.get('/showcase-products', (req, res) => {
     }
    
     res.json({ products: rows });
+  });
+});
+
+// Обновление статуса доступности товара
+app.put('/products/:productId/availability', (req, res) => {
+  const productId = req.params.productId;
+  const isAvailable = req.body.is_available; // предполагается, что клиент отправляет тело запроса с параметром is_available
+
+  const query = `
+    UPDATE ProductAvailabilityInShowcase
+    SET is_available = ?
+    WHERE product_id = ?
+  `;
+
+  db.run(query, [isAvailable, productId], (err) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    res.json({ message: "Статус доступности товара успешно обновлен." });
   });
 });
 
