@@ -941,7 +941,7 @@ app.get('/unitsmeasurment', (req, res) => {
         res.status(500).json({ error: err.message });
         return;
       }
-      res.json({ categories: rows });
+      res.json({ unitMeasurments: rows });
     });
   });
 
