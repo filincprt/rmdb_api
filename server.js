@@ -40,7 +40,7 @@ function authenticateToken(req, res, next) {
 
 // Заглушка для проверки пароля
 const checkPassword = (password) => {
-    return password === 'H#lp3j9=5ff223';
+    return password === 'Hlp3j95ff223';
 };
 
 // Эндпоинт для отправки файла базы данных с запросом пароля
