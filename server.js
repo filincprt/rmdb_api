@@ -877,7 +877,7 @@ app.put('/products/:id', (req, res) => {
 app.post('/products', (req, res) => {
   const { name, price, color_primary, color_light, description, category_id, units_id, quantity, barcode, image_resource } = req.body;
 
-  const query = 'INSERT INTO Products (name, image_resource, price, color_primary, color_light, description, category_id, units_id, quantity, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  const query = 'INSERT INTO Products (name, image_resource, price, color_primary, color_light, description, category_id, units_id, quantity, barcode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   db.run(query, [name, price, color_primary, color_light, , image_resource, description, category_id, units_id, quantity, barcode], function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
