@@ -40,8 +40,6 @@ const authenticateToken = (req, res, next) => {
 };
 
 module.exports = authenticateToken;
-const authenticateToken = require('./middleware/authenticateToken');
-
 //----------------------------------------------------------------------------
 
 // Заглушка для проверки пароля
