@@ -34,12 +34,21 @@ const authenticateToken = (req, res, next) => {
     if (err) {
       return res.status(401).json({ error: 'Unauthorized: Invalid token' });
     }
+  
+    const userId = decoded.adminId; 
+    const userExists = checkUserExists(userId); 
+
+    if (!userExists) {
+      return res.status(401).json({ error: 'Unauthorized: User not found' });
+    }
+
     req.user = decoded;
     next();
   });
 };
 
 module.exports = authenticateToken;
+
 //----------------------------------------------------------------------------
 
 // Заглушка для проверки пароля
@@ -1134,7 +1143,6 @@ app.post('/admin/register', async (req, res) => {
   });
 });
 
-// Аутентификация администратора
 app.post('/admin/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -1155,7 +1163,9 @@ app.post('/admin/login', async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, row.password_hash);
 
     if (isValidPassword) {
-      res.json({ message: 'Authentication successful' });
+      // Генерация JWT токена
+      const token = jwt.sign({ adminId: row.id }, 'fdTQtOEFGSsen7cA6c-6U8mOkJRG3mihlMEHX', { expiresIn: '60m' });
+      res.json({ token });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
     }
