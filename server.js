@@ -15,7 +15,9 @@ app.use(express.json({ limit: '50mb' }));
 const db = new sqlite3.Database("./DATABASE_IS_SERVER.db");
  // Путь к вашей базе данных
 
-
+app.get('/ping', (req, res) => {
+  res.status(200).send('OK');
+});
 
 const fs = require('fs');
 const path = require('path');
