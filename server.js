@@ -23,33 +23,6 @@ app.get('/ping', (req, res) => {
   res.status(200).send('OK');
 });
 
-const authenticateTokenFromBody = (req, res, next) => {
-  const token = req.body.token;
-
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized: Token is required' });
-  }
-
-  jwt.verify(token, 'fdTQtOEFGSsen7cA6c6U8mOkJRG3mihlMEHX', (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ error: 'Unauthorized: Invalid token' });
-    }
-  
-    const userId = decoded.adminId; 
-    const userExists = checkUserExists(userId); 
-
-    if (!userExists) {
-      return res.status(401).json({ error: 'Unauthorized: User not found' });
-    }
-
-    req.user = decoded;
-    next();
-  });
-};
-
-module.exports = authenticateTokenFromBody;
-
-
 //----------------------------------------------------------------------------
 
 // Заглушка для проверки пароля
@@ -719,8 +692,7 @@ app.post('/courier_login', (req, res) => {
 //---------------------PRODUCTS----------------------
 
 // Получение всех товаров с названиями категорий
-app.post('/products', authenticateTokenFromBody, (req, res) => {
-  const token = req.body.token;
+app.post('/products', (req, res) => {
   const query = `
     SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available
     FROM Products P
