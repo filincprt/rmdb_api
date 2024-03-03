@@ -23,6 +23,19 @@ app.get('/ping', (req, res) => {
   res.status(200).send('OK');
 });
 
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token == null) return res.sendStatus(401); // Если токен отсутствует, возвращаем ошибку 401
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403); // Если токен недействителен, возвращаем ошибку 403
+    req.user = user; // Присваиваем запросу объект пользователя
+    next(); // Переходим к следующему middleware
+  });
+}
+
 //----------------------------------------------------------------------------
 
 // Заглушка для проверки пароля
@@ -692,7 +705,7 @@ app.post('/courier_login', (req, res) => {
 //---------------------PRODUCTS----------------------
 
 // Получение всех товаров с названиями категорий
-app.get('/products', (req, res) => {
+app.get('/products', authenticateToken, (req, res) => {
     const query = `
     SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available
     FROM Products P
