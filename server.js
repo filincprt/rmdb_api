@@ -666,24 +666,60 @@ app.delete('/couriers/:id', (req, res) => {
     stmt.finalize();
 });
 
-app.post('/courier_register', (req, res) => {
-    const { first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier } = req.body;
+const generateIdNumber = async () => {
+    // Получаем текущий максимальный Id_number из базы данных
+    const maxIdNumber = await getMaxIdNumberFromDatabase();
+
+    // Генерируем новый Id_number с шаблоном ID00000 и шагом +1
+    const newIdNumber = 'ID' + (maxIdNumber + 1).toString().padStart(5, '0');
+    return newIdNumber;
+};
+
+const generateLoginCourier = async () => {
+    // Получаем текущий максимальный login_courier из базы данных
+    const maxLoginCourier = await getMaxLoginCourierFromDatabase();
+
+    // Генерируем новый login_courier с шаблоном crer_00000 и шагом +1
+    const newLoginCourier = 'crer_' + (maxLoginCourier + 1).toString().padStart(5, '0');
+    return newLoginCourier;
+};
+
+const generatePassword = () => {
+    // Генерируем уникальный 8-значный пароль
+    const password = Math.random().toString(36).substring(2, 10);
+    return password;
+};
+
+app.post('/courier_register', async (req, res) => {
+    const { first_name, last_name, second_name, contact_number } = req.body;
 
     // Проверка наличия всех обязательных полей
-    if (!first_name || !last_name || !contact_number || !Id_number || !login_courier || !pass_courier) {
+    if (!first_name || !last_name || !contact_number) {
         return res.status(400).json({ error: 'Пожалуйста, заполните все обязательные поля.' });
     }
 
-    // Добавление нового курьера в базу данных
-    const stmt = db.prepare(`INSERT INTO Couriers (first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    stmt.run(first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier, (err) => {
-        if (err) {
-            return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
-        }
-        res.status(200).json({ message: 'Курьер успешно зарегистрирован.' });
-    });
-    stmt.finalize();
+    try {
+        // Генерируем Id_number, login_courier и pass_courier
+        const Id_number = await generateIdNumber();
+        const login_courier = await generateLoginCourier();
+        const pass_courier = generatePassword();
+
+        // Добавление нового курьера в базу данных
+        const stmt = db.prepare(`INSERT INTO Couriers (first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+        stmt.run(first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier, (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
+            }
+            res.status(200).json({ message: 'Курьер успешно зарегистрирован.' });
+        });
+        stmt.finalize();
+    } catch (error) {
+        console.error('Ошибка при регистрации курьера:', error);
+        return res.status(500).json({ error: 'Произошла ошибка при регистрации курьера.' });
+    }
 });
+
+
 
 // Метод для авторизации курьера
 app.post('/courier_login', (req, res) => {
