@@ -30,7 +30,7 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: 'Unauthorized: Token is required' });
   }
 
-  jwt.verify(token, 'fdTQtOEFGSsen7cA6c-6U8mOkJRG3mihlMEHX', (err, decoded) => {
+  jwt.verify(token, 'fdTQtOEFGSsen7cA6c6U8mOkJRG3mihlMEHX', (err, decoded) => {
     if (err) {
       return res.status(401).json({ error: 'Unauthorized: Invalid token' });
     }
@@ -107,7 +107,7 @@ app.put('/orders/update/:id', (req, res) => {
     }
 
     // Удаление товаров, которых нет в обновленном заказе
-    const currentProducts = orderDetails.products.map(product => product.product_id);
+    const current = orderDetails.products.map(product => product.product_id);
     const queryDeleteProducts = `DELETE FROM Order_Lines WHERE order_id=? AND product_id NOT IN (${currentProducts.join(',')})`;
     db.run(queryDeleteProducts, [orderId], function (err) {
       if (err) {
@@ -1164,7 +1164,7 @@ app.post('/admin/login', async (req, res) => {
 
     if (isValidPassword) {
       // Генерация JWT токена
-      const token = jwt.sign({ adminId: row.id }, 'fdTQtOEFGSsen7cA6c-6U8mOkJRG3mihlMEHX', { expiresIn: '60m' });
+      const token = jwt.sign({ adminId: row.id }, 'fdTQtOEFGSsen7cA6c6U8mOkJRG3mihlMEHX', { expiresIn: '60m' });
       res.json({ token });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
