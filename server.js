@@ -1151,7 +1151,7 @@ app.post('/admin/login', async (req, res) => {
 
     if (isValidPassword) {
       // Генерация JWT токена
-      const token = jwt.sign({ adminId: row.id }, 'fdTQtOEFGSsen7cA6c6U8mOkJRG3mihlMEHX', { expiresIn: '60m' });
+      const token = jwt.sign({ adminId: row.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '60m' });
       res.json({ token });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
