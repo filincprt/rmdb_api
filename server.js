@@ -23,8 +23,8 @@ app.get('/ping', (req, res) => {
   res.status(200).send('OK');
 });
 
-const authenticateToken = (req, res, next) => {
-  const token = req.headers['authorization'];
+const authenticateTokenFromBody = (req, res, next) => {
+  const token = req.body.token;
 
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized: Token is required' });
@@ -47,7 +47,8 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-module.exports = authenticateToken;
+module.exports = authenticateTokenFromBody;
+
 
 //----------------------------------------------------------------------------
 
@@ -718,7 +719,8 @@ app.post('/courier_login', (req, res) => {
 //---------------------PRODUCTS----------------------
 
 // Получение всех товаров с названиями категорий
-app.get('/products', authenticateToken, (req, res) => {
+app.post('/products', authenticateTokenFromBody, (req, res) => {
+  const token = req.body.token;
   const query = `
     SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available
     FROM Products P
