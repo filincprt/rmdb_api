@@ -4,9 +4,13 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const app = express();
+const jwt = require('jsonwebtoken');
 const cors = require('cors')
 const http = require('http').Server(app);
 const port = 3000;
+
+const fs = require('fs');
+const path = require('path');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -19,12 +23,30 @@ app.get('/ping', (req, res) => {
   res.status(200).send('OK');
 });
 
-const fs = require('fs');
-const path = require('path');
+const authenticateToken = (req, res, next) => {
+  const token = req.headers['authorization'];
 
-// Заглушка для проверки пароля (замените на свою реализацию)
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized: Token is required' });
+  }
+
+  jwt.verify(token, 'fdTQtOEFGSsen7cA6c-6U8mOkJRG3mihlMEHX', (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
+module.exports = authenticateToken;
+const authenticateToken = require('./middleware/authenticateToken');
+
+//----------------------------------------------------------------------------
+
+// Заглушка для проверки пароля
 const checkPassword = (password) => {
-    return password === 'your_password';
+    return password === 'H#lp3j9=5ff223';
 };
 
 // Эндпоинт для отправки файла базы данных с запросом пароля
@@ -689,7 +711,7 @@ app.post('/courier_login', (req, res) => {
 //---------------------PRODUCTS----------------------
 
 // Получение всех товаров с названиями категорий
-app.get('/products', (req, res) => {
+app.get('/products', authenticateToken, (req, res) => {
   const query = `
     SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available
     FROM Products P
