@@ -694,8 +694,6 @@ const getMaxIdNumberFromDatabase = async () => {
                 // Если запрос выполнен успешно, возвращаем максимальное значение Id_number
                 resolve(row.maxId);
             }
-            // Закрываем соединение с базой данных после выполнения запроса
-            db.close();
         });
     });
 };
@@ -710,13 +708,9 @@ const getMaxLoginCourierFromDatabase = async () => {
                 // Если запрос выполнен успешно, возвращаем максимальное значение login_courier
                 resolve(row.maxLoginCourier);
             }
-            // Закрываем соединение с базой данных после выполнения запроса
-            db.close();
         });
     });
 };
-
-
 
 const generatePassword = () => {
     // Генерируем уникальный 8-значный пароль
@@ -742,16 +736,20 @@ app.post('/courier_register', async (req, res) => {
         const stmt = db.prepare(`INSERT INTO Couriers (first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier) VALUES (?, ?, ?, ?, ?, ?, ?)`);
         stmt.run(first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier, (err) => {
             if (err) {
+                db.close(); // Закрываем соединение с базой данных в случае ошибки
                 return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
             }
+            stmt.finalize(); // Завершаем операцию по добавлению курьера
+            db.close(); // Закрываем соединение с базой данных
             res.status(200).json({ message: 'Курьер успешно зарегистрирован.' });
         });
-        stmt.finalize();
     } catch (error) {
         console.error('Ошибка при регистрации курьера:', error);
+        db.close(); // Закрываем соединение с базой данных в случае ошибки
         return res.status(500).json({ error: 'Произошла ошибка при регистрации курьера.' });
     }
 });
+
 
 
 
