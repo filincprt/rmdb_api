@@ -702,6 +702,25 @@ const getMaxIdNumberFromDatabase = async () => {
     });
 };
 
+const getMaxLoginCourierFromDatabase = async () => {
+    return new Promise((resolve, reject) => {
+        // Открываем соединение с базой данных
+        // Выполняем SQL-запрос для получения максимального login_courier
+        db.get('SELECT MAX(login_courier) AS maxLoginCourier FROM Couriers', (err, row) => {
+            if (err) {
+                reject(err); // В случае ошибки отклоняем промис с ошибкой
+            } else {
+                // Если запрос выполнен успешно, возвращаем максимальное значение login_courier
+                resolve(row.maxLoginCourier);
+            }
+        });
+
+        // Закрываем соединение с базой данных после выполнения запроса
+        db.close();
+    });
+};
+
+
 const generatePassword = () => {
     // Генерируем уникальный 8-значный пароль
     const password = Math.random().toString(36).substring(2, 10);
