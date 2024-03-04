@@ -736,16 +736,14 @@ app.post('/courier_register', async (req, res) => {
         const stmt = db.prepare(`INSERT INTO Couriers (first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier) VALUES (?, ?, ?, ?, ?, ?, ?)`);
         stmt.run(first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier, (err) => {
             if (err) {
-                db.close(); // Закрываем соединение с базой данных в случае ошибки
+                console.error('Ошибка при выполнении запроса:', err);
                 return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
             }
             stmt.finalize(); // Завершаем операцию по добавлению курьера
-            db.close(); // Закрываем соединение с базой данных
             res.status(200).json({ message: 'Курьер успешно зарегистрирован.' });
         });
     } catch (error) {
         console.error('Ошибка при регистрации курьера:', error);
-        db.close(); // Закрываем соединение с базой данных в случае ошибки
         return res.status(500).json({ error: 'Произошла ошибка при регистрации курьера.' });
     }
 });
