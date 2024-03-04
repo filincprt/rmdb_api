@@ -731,10 +731,11 @@ app.post('/courier_register', async (req, res) => {
         const Id_number = await generateIdNumber();
         const login_courier = await generateLoginCourier();
         const pass_courier = generatePassword();
+        const status_id = 2;
 
         // Добавление нового курьера в базу данных
-        const stmt = db.prepare(`INSERT INTO Couriers (first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-        stmt.run(first_name, last_name, second_name, contact_number, Id_number, login_courier, pass_courier, (err) => {
+        const stmt = db.prepare(`INSERT INTO Couriers (first_name, last_name, second_name, status_id, contact_number, Id_number, login_courier, pass_courier) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+        stmt.run(first_name, last_name, second_name, status_id, contact_number, Id_number, login_courier, pass_courier, (err) => {
             if (err) {
                 console.error('Ошибка при выполнении запроса:', err);
                 return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
