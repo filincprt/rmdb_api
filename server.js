@@ -671,7 +671,7 @@ const generateIdNumber = async () => {
     const maxIdNumber = await getMaxIdNumberFromDatabase();
 
     // Генерируем новый Id_number с шаблоном ID00000 и шагом +1
-    const newIdNumber = 'ID' + (maxIdNumber + 1).toString().padStart(5, '0');
+    const newIdNumber = 'ID_' + (parseInt(maxIdNumber.split('_')[1]) + 1).toString().padStart(6, '0');
     return newIdNumber;
 };
 
@@ -680,7 +680,7 @@ const generateLoginCourier = async () => {
     const maxLoginCourier = await getMaxLoginCourierFromDatabase();
 
     // Генерируем новый login_courier с шаблоном crer_00000 и шагом +1
-    const newLoginCourier = 'crer_' + (maxLoginCourier + 1).toString().padStart(5, '0');
+    const newLoginCourier = 'crer_' + (parseInt(maxLoginCourier.split('_')[1]) + 1).toString().padStart(6, '0');
     return newLoginCourier;
 };
 
@@ -692,7 +692,7 @@ const getMaxIdNumberFromDatabase = async () => {
                 reject(err); // В случае ошибки отклоняем промис с ошибкой
             } else {
                 // Если запрос выполнен успешно, возвращаем максимальное значение Id_number
-                resolve(row.maxId);
+                resolve(row.maxId || 'ID_000000');
             }
         });
     });
@@ -706,7 +706,7 @@ const getMaxLoginCourierFromDatabase = async () => {
                 reject(err); // В случае ошибки отклоняем промис с ошибкой
             } else {
                 // Если запрос выполнен успешно, возвращаем максимальное значение login_courier
-                resolve(row.maxLoginCourier);
+                resolve(row.maxLoginCourier || 'crer_000000');
             }
         });
     });
@@ -748,9 +748,6 @@ app.post('/courier_register', async (req, res) => {
         return res.status(500).json({ error: 'Произошла ошибка при регистрации курьера.' });
     }
 });
-
-
-
 
 // Метод для авторизации курьера
 app.post('/courier_login', (req, res) => {
@@ -883,7 +880,6 @@ app.get('/products/category/:category_id', (req, res) => {
     res.json({ products: rows });
   });
 });
-
 
 // Редактирование продукта
 app.put('/products/:id', (req, res) => {
