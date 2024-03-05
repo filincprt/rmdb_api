@@ -1316,7 +1316,6 @@ app.get('/orders/:id', (req, res) => {
   });
 });
 
-
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
     const { user_id, product_id, quantity, delivery_time, status_id, address, user_comment } = req.body;
@@ -1392,10 +1391,9 @@ app.post('/orders', (req, res) => {
                     res.status(500).json({ error: err.message });
                     return;
                 }
-
                 // Обновляем информацию о курьере в базе данных
                 updateCourier(orderNumber, courierId);
-
+      
                 res.json({ id: orderId });
             });
         });
@@ -1411,7 +1409,6 @@ app.post('/orders', (req, res) => {
         });
     };
 });
-
 
 
 // Редактирование данных в таблице Orders
