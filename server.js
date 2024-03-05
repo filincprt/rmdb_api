@@ -1254,50 +1254,6 @@ app.post('/admin/login', async (req, res) => {
 
 //----------------------REPORTS----------------------------
 
-// GET-метод для получения информации о продажах в целом
-app.get('/order_reports', (req, res) => {
-    // Запрос к базе данных для получения данных из таблицы Order_Report
-    db.all('SELECT * FROM OrderReport', (err, rows) => {
-        if (err) {
-            console.error(err.message);
-            return res.status(500).json({ error: 'Ошибка при выполнении запроса к базе данных' });
-        }
-        // Возвращаем результат в формате JSON
-        res.json(rows);
-    });
-});
-
-
-// GET-метод для получения информации о продажах товаров
-app.get('/product_sales_reports', (req, res) => {
-    // Запрос к базе данных для получения данных из таблицы Product_Sales_Report
-    db.all('SELECT * FROM Product_Sales_Report', (err, rows) => {
-        if (err) {
-            console.error(err.message);
-            return res.status(500).json({ error: 'Ошибка при выполнении запроса к базе данных' });
-        }
-        // Возвращаем результат в формате JSON
-        res.json(rows);
-    });
-});
-
-//Get-Метод для получения отчета о работе курьеров
-app.get('/courier_work_reports', (req, res) => {
-    db.all(`SELECT cr.Id_number AS courier_id, o.order_number, cwr.order_date, cwr.order_total
-            FROM Courier_Work_Report AS cwr
-            JOIN Couriers AS cr ON cwr.courier_id = cr.courier_id
-            JOIN Orders AS o ON cwr.order_id = o.id`, 
-    (err, rows) => {
-        if (err) {
-            console.error(err.message);
-            return res.status(500).json({ error: 'Ошибка при выполнении запроса к базе данных' });
-        }
-        res.json(rows);
-    });
-});
-
-
-
 
 //----------------------ORDERS-----------------------------
 
