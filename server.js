@@ -741,7 +741,7 @@ app.post('/courier_register', async (req, res) => {
                 return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
             }
             stmt.finalize(); // Завершаем операцию по добавлению курьера
-            res.status(200).json({ message: 'Курьер успешно зарегистрирован.' });
+            res.status(200).json({ message: 'Курьер успешно зарегистрирован.', login_courier, pass_courier });
         });
     } catch (error) {
         console.error('Ошибка при регистрации курьера:', error);
