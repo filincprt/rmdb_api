@@ -923,26 +923,35 @@ app.post('/products', (req, res) => {
 });
 
 app.delete('/products/:id', async (req, res) => {
-  const productId = req.params.id;
+    const productId = req.params.id;
 
-  // Проверяем доступность товара в витрине
-  const availability = await db.get('SELECT is_available FROM ProductAvailabilityInShowcase WHERE product_id = ?', [productId]);
+    // Проверяем, доступен ли продукт в витрине
+    const productAvailability = await db.get('SELECT is_available FROM ProductAvailabilityInShowcase WHERE product_id = ?', [productId]);
 
-  // Если товар доступен, возвращаем сообщение об ошибке
-  if (availability === 1) {
-    return res.status(400).json({ error: 'Нельзя удалить доступный товар из витрины.' });
-  }
-
-  // Удаление товара из базы данных
-  const query = 'DELETE FROM Products WHERE id=?';
-  db.run(query, [productId], function (err) {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
+    // Если продукт недоступен, возвращаем сообщение об ошибке
+    if (!productAvailability) {
+        return res.status(400).json({ error: 'Нельзя удалить недоступный продукт.' });
     }
-    res.json({ deleted: this.changes });
-  });
+
+    // Проверяем, находится ли продукт в заказах со статусом "Новый", "В пути" или "В сборке"
+    const ordersWithProduct = await db.get('SELECT * FROM Orders JOIN Order_Lines ON Orders.id = Order_Lines.order_id WHERE Order_Lines.product_id = ? AND Orders.status_id IN (1, 2, 5)', [productId]);
+
+    // Если продукт находится в заказе со статусом "Новый", "В пути" или "В сборке", возвращаем сообщение об ошибке
+    if (ordersWithProduct) {
+        return res.status(400).json({ error: 'Нельзя удалить продукт, находящийся в заказе со статусом "Новый", "В пути" или "В сборке".' });
+    }
+
+    // Удаление продукта из базы данных
+    const query = 'DELETE FROM Products WHERE id=?';
+    db.run(query, [productId], function (err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ deleted: this.changes });
+    });
 });
+
 
 
 //-------------------------ProductShipments------------------------------
