@@ -651,24 +651,28 @@ app.put('/couriers/:id', (req, res) => {
     stmt.finalize();
 });
 
-app.delete('/couriers/:id', async (req, res) => {
+app.delete('/couriers/:id', (req, res) => {
     const courierId = req.params.id;
 
-    // Проверяем наличие заказов у курьера
-    const ordersCount = await db.get('SELECT COUNT(*) FROM Orders WHERE courier_id = ?', [courierId]);
-
-    // Если у курьера есть заказы, возвращаем сообщение об ошибке
-    if (ordersCount > 0) {
-        return res.status(400).json({ error: 'Нельзя удалить курьера, у которого есть заказы.' });
-    }
-
-    // Удаление курьера из базы данных
-    const stmt = db.prepare(`DELETE FROM Couriers WHERE courier_id = ?`);
-    stmt.run(courierId, (err) => {
+    // Проверяем, есть ли у курьера заказы
+    const stmt = db.prepare(`SELECT * FROM Couriers WHERE courier_id = ? AND order_number IS NOT NULL`);
+    stmt.get(courierId, (err, row) => {
         if (err) {
             return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
         }
-        res.status(200).json({ message: 'Курьер успешно удален.' });
+        if (row) {
+            return res.status(400).json({ error: 'Нельзя удалить курьера, у которого есть заказы.' });
+        }
+
+        // Если у курьера нет заказов, выполняем удаление
+        const deleteStmt = db.prepare(`DELETE FROM Couriers WHERE courier_id = ?`);
+        deleteStmt.run(courierId, (deleteErr) => {
+            if (deleteErr) {
+                return res.status(500).json({ error: 'Произошла ошибка при удалении курьера.' });
+            }
+            res.status(200).json({ message: 'Курьер успешно удален.' });
+        });
+        deleteStmt.finalize();
     });
     stmt.finalize();
 });
