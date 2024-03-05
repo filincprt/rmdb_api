@@ -651,9 +651,16 @@ app.put('/couriers/:id', (req, res) => {
     stmt.finalize();
 });
 
-// Удаление курьера по ID
-app.delete('/couriers/:id', (req, res) => {
+app.delete('/couriers/:id', async (req, res) => {
     const courierId = req.params.id;
+
+    // Проверяем наличие заказов у курьера
+    const ordersCount = await db.get('SELECT COUNT(*) FROM Orders WHERE courier_id = ?', [courierId]);
+
+    // Если у курьера есть заказы, возвращаем сообщение об ошибке
+    if (ordersCount > 0) {
+        return res.status(400).json({ error: 'Нельзя удалить курьера, у которого есть заказы.' });
+    }
 
     // Удаление курьера из базы данных
     const stmt = db.prepare(`DELETE FROM Couriers WHERE courier_id = ?`);
@@ -915,9 +922,18 @@ app.post('/products', (req, res) => {
 });
 });
 
-// Удаление продукта
-app.delete('/products/:id', (req, res) => {
+app.delete('/products/:id', async (req, res) => {
   const productId = req.params.id;
+
+  // Проверяем доступность товара в витрине
+  const availability = await db.get('SELECT is_available FROM ProductAvailabilityInShowcase WHERE product_id = ?', [productId]);
+
+  // Если товар доступен, возвращаем сообщение об ошибке
+  if (availability === 1) {
+    return res.status(400).json({ error: 'Нельзя удалить доступный товар из витрины.' });
+  }
+
+  // Удаление товара из базы данных
   const query = 'DELETE FROM Products WHERE id=?';
   db.run(query, [productId], function (err) {
     if (err) {
