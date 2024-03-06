@@ -1337,27 +1337,34 @@ app.get('/orders/:id', (req, res) => {
 
 
 
-// Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-    const { user_id, product_id, quantity, delivery_time, status_id, address, user_comment } = req.body;
+    const { user_id, products, delivery_time, status_id, address, user_comment } = req.body;
 
     // Проверяем наличие товара и достаточное количество на складе
-    const queryCheckProductAvailability = 'SELECT quantity FROM Products WHERE id = ?';
-    db.get(queryCheckProductAvailability, [product_id], (err, row) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+    const checkProductAvailability = () => {
+        let remainingProducts = products.length;
+        products.forEach(product => {
+            const { product_id, quantity } = product;
+            const queryCheckProductAvailability = 'SELECT quantity FROM Products WHERE id = ?';
+            db.get(queryCheckProductAvailability, [product_id], (err, row) => {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
 
-        // Если товара нет в наличии или недостаточное количество на складе, возвращаем ошибку
-        if (!row || row.quantity === 0 || row.quantity < quantity) {
-            res.status(400).json({ error: "Товара нет в достаточном количестве на складе" });
-            return;
-        }
+                // Если товара нет в наличии или недостаточное количество на складе, возвращаем ошибку
+                if (!row || row.quantity === 0 || row.quantity < quantity) {
+                    res.status(400).json({ error: "Товара нет в достаточном количестве на складе" });
+                    return;
+                }
 
-        // Продолжаем с созданием заказа
-        generateOrderNumber();
-    });
+                remainingProducts--;
+                if (remainingProducts === 0) {
+                    generateOrderNumber();
+                }
+            });
+        });
+    };
 
     // Функция генерации номера заказа и добавления заказа
     const generateOrderNumber = () => {
