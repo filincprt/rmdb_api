@@ -1,4 +1,4 @@
-orconst express = require('express');
+const express = require('express');
 const sqlite3 = require('sqlite3');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
