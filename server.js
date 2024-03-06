@@ -1333,38 +1333,45 @@ app.get('/orders/:id', (req, res) => {
 });
 
 // Добавление данных в таблицу Orders
-app.post('/orders', (req, res) => {
-    const { user_id, products, delivery_time, status_id, address, user_comment } = req.body;
+// Функция добавления заказа в таблицу Orders
+const addOrder = (orderNumber, courierId) => {
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
 
-    // Проверяем наличие товаров и достаточное количество каждого товара на складе
-    const productPromises = products.map(product => {
-        const { product_id, quantity } = product;
-        return new Promise((resolve, reject) => {
-            const queryCheckProductAvailability = 'SELECT quantity FROM Products WHERE id = ?';
-            db.get(queryCheckProductAvailability, [product_id], (err, row) => {
-                if (err) {
-                    reject(err.message);
-                    return;
-                }
-                // Если товара нет в наличии или недостаточное количество на складе, возвращаем ошибку
-                if (!row || row.quantity === 0 || row.quantity < quantity) {
-                    reject(`Товара с ID ${product_id} нет в достаточном количестве на складе`);
-                    return;
-                }
-                resolve();
+        const orderId = this.lastID;
+        
+        // Используем Promise.all для выполнения всех запросов добавления товаров в заказ
+        const orderLinePromises = products.map(product => {
+            const { product_id, quantity } = product;
+            const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+            return new Promise((resolve, reject) => {
+                db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+                    if (err) {
+                        reject(err.message);
+                        return;
+                    }
+                    resolve();
+                });
             });
         });
-    });
 
-    // Ждем завершения всех проверок наличия товаров на складе
-    Promise.all(productPromises)
-        .then(() => {
-            // Все товары доступны, продолжаем с созданием заказа
-            generateOrderNumber();
-        })
-        .catch(error => {
-            res.status(400).json({ error });
-        });
+        // Ждем завершения всех запросов добавления товаров в заказ
+        Promise.all(orderLinePromises)
+            .then(() => {
+                // Обновляем информацию о курьере в базе данных
+                updateCourier(orderNumber, courierId);
+                res.json({ id: orderId });
+            })
+            .catch(error => {
+                res.status(500).json({ error });
+            });
+    });
+};
+
 
     // Функция генерации номера заказа и добавления заказа
     const generateOrderNumber = () => {
