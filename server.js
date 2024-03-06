@@ -1336,6 +1336,9 @@ app.get('/orders/:id', (req, res) => {
 
 
 
+
+
+
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
     const { user_id, products, delivery_time, status_id, address, user_comment } = req.body;
@@ -1454,6 +1457,8 @@ app.post('/orders', (req, res) => {
             res.status(400).json({ error: error });
         });
 });
+
+
 
 
 
