@@ -1336,6 +1336,7 @@ app.get('/orders/:id', (req, res) => {
 
 
 
+
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
     const { user_id, products, delivery_time, status_id, address, user_comment } = req.body;
@@ -1401,28 +1402,55 @@ app.post('/orders', (req, res) => {
     };
 
     // Функция добавления заказа в таблицу Orders
-    const addOrder = (orderNumber, courierId) => {
-        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+   // Функция добавления заказа в таблицу Orders
+const addOrder = (orderNumber, courierId, productId, quantity) => {
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        const orderId = this.lastID;
+        const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+        db.run(queryOrderLine, [orderId, productId, quantity], function (err) {
             if (err) {
                 res.status(500).json({ error: err.message });
                 return;
             }
-
-            const orderId = this.lastID;
-            const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-            db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-                if (err) {
-                    res.status(500).json({ error: err.message });
-                    return;
-                }
-                // Обновляем информацию о курьере в базе данных
-                updateCourier(orderNumber, courierId);
-      
-                res.json({ id: orderId });
-            });
+            // Обновляем информацию о курьере в базе данных
+            updateCourier(orderNumber, courierId);
+  
+            res.json({ id: orderId });
         });
-    };
+    });
+};
+
+// В цикле forEach изменяем вызов функции addOrder, чтобы передать product_id и quantity
+products.forEach(product => {
+    const { product_id, quantity } = product;
+    const queryCheckProductAvailability = 'SELECT quantity FROM Products WHERE id = ?';
+    db.get(queryCheckProductAvailability, [product_id], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        // Если товара нет в наличии или недостаточное количество на складе, возвращаем ошибку
+        if (!row || row.quantity === 0 || row.quantity < quantity) {
+            res.status(400).json({ error: "Товара нет в достаточном количестве на складе" });
+            return;
+        }
+
+        // Если все товары доступны, продолжаем с созданием заказа
+        if (products.indexOf(product) === products.length - 1) {
+            generateOrderNumber();
+        }
+        // Передаем product_id и quantity в функцию addOrder
+        addOrder(orderNumber, randomCourierId, product_id, quantity);
+    });
+});
+
 
     // Функция обновления информации о курьере
     const updateCourier = (orderNumber, courierId) => {
@@ -1434,6 +1462,12 @@ app.post('/orders', (req, res) => {
         });
     };
 });
+
+
+
+
+
+
 
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
