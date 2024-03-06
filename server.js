@@ -1358,22 +1358,22 @@ app.post('/orders', (req, res) => {
 
     // Продолжаем с созданием заказа
     generateOrderNumber();
+});
+
+// Функция генерации номера заказа и добавления заказа
+const generateOrderNumber = () => {
+    const queryLastOrderNumber = 'SELECT MAX(CAST(order_number AS INTEGER)) AS last_order_number FROM Orders';
+    db.get(queryLastOrderNumber, [], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
+        const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
+        notifyFreeCouriers(nextOrderNumber); // Вызов метода для уведомления курьеров с сгенерированным номером заказа
     });
-
-    // Функция генерации номера заказа и добавления заказа
-    const generateOrderNumber = () => {
-        const queryLastOrderNumber = 'SELECT MAX(CAST(order_number AS INTEGER)) AS last_order_number FROM Orders';
-        db.get(queryLastOrderNumber, [], (err, row) => {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
-
-            let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
-            const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
-            notifyFreeCouriers(nextOrderNumber); // Вызов метода для уведомления курьеров с сгенерированным номером заказа
-        });
-    };
+};
 
     // Метод для уведомления случайных свободных активных курьеров о новом заказе
     const notifyFreeCouriers = (orderNumber) => {
