@@ -1335,21 +1335,7 @@ app.get('/orders/:id', (req, res) => {
 
 
 
-
-
-
-
-{
-  "user_id": 1,
-  "products": [
-    { "product_id": 1, "quantity": 2 },
-    { "product_id": 3, "quantity": 1 }
-  ],
-  "delivery_time": "06.03.2024",
-  "status_id": 1,
-  "address": "Уфа, улица Комсомольская, 32, кв. 7",
-  "user_comment": "-"
-}. // Добавление данных в таблицу Orders
+// Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
     const { user_id, products, delivery_time, status_id, address, user_comment } = req.body;
 
