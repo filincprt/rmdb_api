@@ -1,4 +1,4 @@
-const express = require('express');
+orconst express = require('express');
 const sqlite3 = require('sqlite3');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
@@ -1334,50 +1334,53 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-    const { user_id, products, delivery_time, status_id, address, user_comment } = req.body;
+    const { user_id, products } = req.body; // Изменения в деструктуризации
 
-    // Проверяем каждый товар из массива
-    products.forEach(product => {
-        const { product_id, quantity } = product;
+    // Проверка наличия и достаточного количества товаров
+    const checkProductsAvailability = () => {
+        const promises = products.map(product => {
+            return new Promise((resolve, reject) => {
+                const queryCheckProductAvailability = 'SELECT quantity FROM Products WHERE id = ?';
+                db.get(queryCheckProductAvailability, [product.product_id], (err, row) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (!row || row.quantity === 0 || row.quantity < product.quantity) {
+                            reject(`Товара с id ${product.product_id} нет в достаточном количестве на складе`);
+                        } else {
+                            resolve();
+                        }
+                    }
+                });
+            });
+        });
 
-        // Проверяем наличие товара и достаточное количество на складе для каждого товара
-        const queryCheckProductAvailability = 'SELECT quantity FROM Products WHERE id = ?';
-        db.get(queryCheckProductAvailability, [product_id], (err, row) => {
+        return Promise.all(promises);
+    };
+
+    checkProductsAvailability()
+        .then(() => generateOrderNumber())
+        .catch(error => {
+            res.status(400).json({ error: error });
+        });
+
+    // Генерация номера заказа и добавление заказа
+    const generateOrderNumber = () => {
+        const queryLastOrderNumber = 'SELECT MAX(CAST(order_number AS INTEGER)) AS last_order_number FROM Orders';
+        db.get(queryLastOrderNumber, [], (err, row) => {
             if (err) {
                 res.status(500).json({ error: err.message });
                 return;
             }
 
-            // Если товара нет в наличии или недостаточное количество на складе, возвращаем ошибку
-            if (!row || row.quantity === 0 || row.quantity < quantity) {
-                res.status(400).json({ error: "Товара нет в достаточном количестве на складе" });
-                return;
-            }
+            let lastOrderNumber = row.last_order_number || 0;
+            const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8);
+            notifyFreeCouriers(nextOrderNumber);
         });
-    });
+    };
 
-    // Продолжаем с созданием заказа
-    generateOrderNumber();
-});
-
-// Функция генерации номера заказа и добавления заказа
-const generateOrderNumber = () => {
-    const queryLastOrderNumber = 'SELECT MAX(CAST(order_number AS INTEGER)) AS last_order_number FROM Orders';
-    db.get(queryLastOrderNumber, [], (err, row) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
-        const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
-        notifyFreeCouriers(nextOrderNumber); // Вызов метода для уведомления курьеров с сгенерированным номером заказа
-    });
-};
-
-    // Метод для уведомления случайных свободных активных курьеров о новом заказе
+    // Уведомление курьеров о новом заказе
     const notifyFreeCouriers = (orderNumber) => {
-        // Получаем список свободных активных курьеров
         const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
         db.all(queryFreeCouriers, [], (err, rows) => {
             if (err) {
@@ -1385,52 +1388,63 @@ const generateOrderNumber = () => {
                 return;
             }
 
-            // Если есть свободные активные курьеры, выбираем случайного и добавляем заказ
             if (rows.length > 0) {
                 const randomCourierIndex = Math.floor(Math.random() * rows.length);
                 const randomCourierId = rows[randomCourierIndex].courier_id;
                 addOrder(orderNumber, randomCourierId);
             } else {
-                // Если нет свободных активных курьеров, просто добавляем заказ без назначения курьера
                 addOrder(orderNumber, null);
             }
         });
     };
 
-    // Функция добавления заказа в таблицу Orders
+    // Добавление заказа в таблицу Orders
     const addOrder = (orderNumber, courierId) => {
         const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+        db.run(queryOrder, [user_id, orderNumber, new Date(), 1, 'Адрес', courierId, 'Комментарий'], function (err) {
             if (err) {
                 res.status(500).json({ error: err.message });
                 return;
             }
 
             const orderId = this.lastID;
-            const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-            db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-                if (err) {
-                    res.status(500).json({ error: err.message });
-                    return;
-                }
-                // Обновляем информацию о курьере в базе данных
-                updateCourier(orderNumber, courierId);
-      
-                res.json({ id: orderId });
+            const promises = products.map(product => {
+                return new Promise((resolve, reject) => {
+                    const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+                    db.run(queryOrderLine, [orderId, product.product_id, product.quantity], function (err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
+                    });
+                });
             });
+
+            Promise.all(promises)
+                .then(() => {
+                    updateCourier(orderNumber, courierId);
+                    res.json({ id: orderId });
+                })
+                .catch(error => {
+                    res.status(500).json({ error: error });
+                });
         });
     };
 
-    // Функция обновления информации о курьере
+    // Обновление информации о курьере
     const updateCourier = (orderNumber, courierId) => {
-        const queryUpdateCourier = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
-        db.run(queryUpdateCourier, [orderNumber, courierId], function (err) {
-            if (err) {
-                console.error('Ошибка при обновлении информации о курьере:', err);
-            }
-        });
+        if (courierId) {
+            const queryUpdateCourier = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
+            db.run(queryUpdateCourier, [orderNumber, courierId], function (err) {
+                if (err) {
+                    console.error('Ошибка при обновлении информации о курьере:', err);
+                }
+            });
+        }
     };
 });
+
 
 
 // Редактирование данных в таблице Orders
