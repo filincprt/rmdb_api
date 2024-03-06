@@ -1698,7 +1698,7 @@ app.put('/orders/:orderId/items/:itemId', (req, res) => {
 
     const orderStatusId = row.status_id;
     // Проверяем, что статус заказа позволяет изменять позиции
-    if (orderStatusId == '1' && orderStatusId == '5') {
+    if (orderStatusId == '1' || orderStatusId == '5') {
       res.status(400).json({ error: 'Невозможно изменить позицию в заказе. Статус заказа не позволяет это сделать.' });
       return;
     }
@@ -1739,7 +1739,7 @@ app.delete('/orders/:orderId/items/:itemId', (req, res) => {
 
     const orderStatusId = row.status_id;
     // Проверяем, что статус заказа позволяет изменять позиции
-    if (orderStatusId == '1' && orderStatusId == '5') {
+    if (orderStatusId == '1' || orderStatusId == '5') {
       res.status(400).json({ error: 'Невозможно удалить позицию из заказа. Статус заказа не позволяет это сделать.' });
       return;
     }
@@ -1782,7 +1782,7 @@ app.put('/orders/:orderId/items/:itemId/replace/:replacementId', (req, res) => {
 
     const orderStatusId = row.status_id;
     // Проверяем, что статус заказа позволяет изменять позиции
-    if (orderStatusId == '1' && orderStatusId == '5') {
+    if (orderStatusId == '1' || orderStatusId == '5') {
       res.status(400).json({ error: 'Невозможно заменить товар в заказе. Статус заказа не позволяет это сделать.' });
       return;
     }
