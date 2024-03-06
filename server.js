@@ -1429,14 +1429,14 @@ app.post('/orders', (req, res) => {
                 });
             });
 
-            Promise.all(promises)
-                .then(() => {
-                    updateCourier(orderNumber, courierId);
-                    res.json({ id: orderId });
-                })
-                .catch((error) => {
-                    res.status(500).json({ error: error });
-                });
+           Promise.all(promises)
+    .then(() => {
+        createOrder(); // Создание заказа после успешной вставки данных в таблицу Order_Lines
+    })
+    .catch((error) => {
+        res.status(500).json({ error: error });
+    });
+
         });
     };
 
