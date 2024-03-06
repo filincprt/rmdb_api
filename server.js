@@ -1484,13 +1484,6 @@ app.post('/orders', (req, res) => {
 });
 
 
-
-
-
-
-
-
-
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
@@ -1545,13 +1538,6 @@ app.put('/orders/:id', (req, res) => {
 }
   });
 });
-
-
-
-
-
-
-
 
 // Функция обновления информации о курьере
 const updateCourier = (orderNumber, courierId, callback) => {
@@ -1653,10 +1639,6 @@ const updateOrdersAndCourier = (orderId, courierId, orderNumber, callback) => {
     });
 };
 
-
-
-
-
 // Удаление данных из таблицы Orders по order_number
 app.delete('/orders/:order_number', (req, res) => {
   const orderNumber = req.params.order_number;
@@ -1697,6 +1679,177 @@ app.delete('/orders/:order_number', (req, res) => {
       });
   });
 });
+
+
+// Обновление позиции в заказе
+app.put('/orders/:orderId/items/:itemId', (req, res) => {
+  const orderId = req.params.orderId;
+  const itemId = req.params.itemId;
+  const { quantity } = req.body;
+
+  // Проверка статуса заказа
+  const queryCheckOrderStatus = 'SELECT status_id FROM Orders WHERE id=?';
+  db.get(queryCheckOrderStatus, [orderId], (err, row) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    const orderStatusId = row.status_id;
+    // Проверяем, что статус заказа позволяет изменять позиции
+    if (orderStatusId !== '1' && orderStatusId !== '5') {
+      res.status(400).json({ error: 'Невозможно изменить позицию в заказе. Статус заказа не позволяет это сделать.' });
+      return;
+    }
+
+    // Обновляем количество товара в позиции заказа
+    const queryUpdateOrderItem = 'UPDATE Order_Lines SET quantity=? WHERE order_id=? AND product_id=?';
+    db.run(queryUpdateOrderItem, [quantity, orderId, itemId], function (err) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      if (this.changes > 0) {
+        console.log('Позиция в заказе была успешно обновлена.');
+        res.json({ success: true });
+      } else {
+        console.log('Позиция в заказе не была обновлена.');
+        res.status(500).json({ error: 'Не удалось обновить позицию в заказе.' });
+      }
+    });
+  });
+});
+
+// Удаление позиции из заказа
+app.delete('/orders/:orderId/items/:itemId', (req, res) => {
+  const orderId = req.params.orderId;
+  const itemId = req.params.itemId;
+
+  // Проверка статуса заказа
+  const queryCheckOrderStatus = 'SELECT status_id FROM Orders WHERE id=?';
+  db.get(queryCheckOrderStatus, [orderId], (err, row) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    const orderStatusId = row.status_id;
+    // Проверяем, что статус заказа позволяет изменять позиции
+    if (orderStatusId !== '1' && orderStatusId !== '5') {
+      res.status(400).json({ error: 'Невозможно удалить позицию из заказа. Статус заказа не позволяет это сделать.' });
+      return;
+    }
+
+    // Удаляем позицию из заказа
+    const queryDeleteOrderItem = 'DELETE FROM Order_Lines WHERE order_id=? AND product_id=?';
+    db.run(queryDeleteOrderItem, [orderId, itemId], function (err) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      if (this.changes > 0) {
+        console.log('Позиция была успешно удалена из заказа.');
+        res.json({ success: true });
+      } else {
+        console.log('Позиция не была удалена из заказа.');
+        res.status(500).json({ error: 'Не удалось удалить позицию из заказа.' });
+      }
+    });
+  });
+});
+
+
+// Обновление позиции в заказе
+app.put('/orders/:orderId/items/:itemId', (req, res) => {
+  const orderId = req.params.orderId;
+  const itemId = req.params.itemId;
+  const { quantity } = req.body;
+
+  // Проверка статуса заказа
+  const queryCheckOrderStatus = 'SELECT status_id FROM Orders WHERE id=?';
+  db.get(queryCheckOrderStatus, [orderId], (err, row) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    const orderStatusId = row.status_id;
+    // Проверяем, что статус заказа позволяет изменять позиции
+    if (orderStatusId !== '1' && orderStatusId !== '5') {
+      res.status(400).json({ error: 'Невозможно изменить позицию в заказе. Статус заказа не позволяет это сделать.' });
+      return;
+    }
+
+    // Обновляем количество товара в позиции заказа
+    const queryUpdateOrderItem = 'UPDATE Order_Lines SET quantity=? WHERE order_id=? AND product_id=?';
+    db.run(queryUpdateOrderItem, [quantity, orderId, itemId], function (err) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      if (this.changes > 0) {
+        console.log('Позиция в заказе была успешно обновлена.');
+        res.json({ success: true });
+      } else {
+        console.log('Позиция в заказе не была обновлена.');
+        res.status(500).json({ error: 'Не удалось обновить позицию в заказе.' });
+      }
+    });
+  });
+});
+
+// Удаление позиции из заказа
+app.delete('/orders/:orderId/items/:itemId', (req, res) => {
+  const orderId = req.params.orderId;
+  const itemId = req.params.itemId;
+
+  // Проверка статуса заказа
+  const queryCheckOrderStatus = 'SELECT status_id FROM Orders WHERE id=?';
+  db.get(queryCheckOrderStatus, [orderId], (err, row) => {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    const orderStatusId = row.status_id;
+    // Проверяем, что статус заказа позволяет изменять позиции
+    if (orderStatusId !== '1' && orderStatusId !== '5') {
+      res.status(400).json({ error: 'Невозможно удалить позицию из заказа. Статус заказа не позволяет это сделать.' });
+      return;
+    }
+
+    // Удаляем позицию из заказа
+    const queryDeleteOrderItem = 'DELETE FROM Order_Lines WHERE order_id=? AND product_id=?';
+    db.run(queryDeleteOrderItem, [orderId, itemId], function (err) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      if (this.changes > 0) {
+        console.log('Позиция была успешно удалена из заказа.');
+        res.json({ success: true });
+      } else {
+        console.log('Позиция не была удалена из заказа.');
+        res.status(500).json({ error: 'Не удалось удалить позицию из заказа.' });
+      }
+    });
+  });
+});
+
+
+//----------------------------------Status----------------------------
 
 // Метод GET для получения всех статусов
 app.get('/statuses', (req, res) => {
@@ -1782,6 +1935,9 @@ app.delete('/statuses/:id', (req, res) => {
 });
 
 
+//-----------------------Barcode------------------------------
+
+
 // Добавление 1 единицы к количеству товара по штрих-коду
 app.post('/products/increment/:barcode', (req, res) => {
   const barcode = req.params.barcode;
@@ -1853,9 +2009,6 @@ app.delete('/products/decrement/:barcode', (req, res) => {
     }
   });
 });
-
-
-
 
 
 app.listen(port, () => {
