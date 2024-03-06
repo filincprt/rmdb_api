@@ -1301,7 +1301,8 @@ app.get('/orders/details', (req, res) => {
                 const orderId = order.id;
                 db.all(`SELECT Products.name AS product_name,
                                Order_Lines.quantity,
-                               Products.price
+                               Products.price,
+                               Order_Lines.product_id as productId
                         FROM Order_Lines
                         JOIN Products ON Order_Lines.product_id = Products.id
                         WHERE Order_Lines.order_id = ?`, [orderId], (err, products) => {
