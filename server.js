@@ -1339,96 +1339,9 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-    const { user_id, products, delivery_time, status_id, address, user_comment } = req.body;
+    const { user_id, product_id, quantity, delivery_time, status_id, address, user_comment } = req.body;
 
-    // Проверяем наличие товаров и достаточное количество на складе
-    products.forEach(product => {
-        const { product_id, quantity } = product;
-        const queryCheckProductAvailability = 'SELECT quantity FROM Products WHERE id = ?';
-        db.get(queryCheckProductAvailability, [product_id], (err, row) => {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
-
-            // Если товара нет в наличии или недостаточное количество на складе, возвращаем ошибку
-            if (!row || row.quantity === 0 || row.quantity < quantity) {
-                res.status(400).json({ error: "Товара нет в достаточном количестве на складе" });
-                return;
-            }
-
-            // Если все товары доступны, продолжаем с созданием заказа
-            if (products.indexOf(product) === products.length - 1) {
-                generateOrderNumber();
-            }
-        });
-    });
-
-    // Метод для уведомления случайных свободных активных курьеров о новом заказе
-const notifyFreeCouriers = (orderNumber) => {
-    // Получаем список свободных активных курьеров
-    const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
-    db.all(queryFreeCouriers, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        // Если есть свободные активные курьеры, выбираем случайного и добавляем заказ
-        if (rows.length > 0) {
-            const randomCourierIndex = Math.floor(Math.random() * rows.length);
-            const randomCourierId = rows[randomCourierIndex].courier_id;
-            addOrder(orderNumber, randomCourierId);
-        } else {
-            // Если нет свободных активных курьеров, просто добавляем заказ без назначения курьера
-            addOrder(orderNumber, null);
-        }
-    });
-};
-
-// Функция генерации номера заказа и добавления заказа
-const generateOrderNumber = () => {
-    const queryLastOrderNumber = 'SELECT MAX(CAST(order_number AS INTEGER)) AS last_order_number FROM Orders';
-    db.get(queryLastOrderNumber, [], (err, row) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
-        const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
-        notifyFreeCouriers(nextOrderNumber); // Вызов метода для уведомления курьеров с сгенерированным номером заказа
-    });
-};
-
-
-   // Функция добавления заказа в таблицу Orders
-const addOrder = (orderNumber, courierId, productId, quantity) => {
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        const orderId = this.lastID;
-        const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-        db.run(queryOrderLine, [orderId, productId, quantity], function (err) {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
-            // Обновляем информацию о курьере в базе данных
-            updateCourier(orderNumber, courierId);
-  
-            res.json({ id: orderId });
-        });
-    });
-};
-
-// В цикле forEach изменяем вызов функции addOrder, чтобы передать product_id и quantity
-products.forEach(product => {
-    const { product_id, quantity } = product;
+    // Проверяем наличие товара и достаточное количество на складе
     const queryCheckProductAvailability = 'SELECT quantity FROM Products WHERE id = ?';
     db.get(queryCheckProductAvailability, [product_id], (err, row) => {
         if (err) {
@@ -1442,15 +1355,70 @@ products.forEach(product => {
             return;
         }
 
-        // Если все товары доступны, продолжаем с созданием заказа
-        if (products.indexOf(product) === products.length - 1) {
-            generateOrderNumber();
-        }
-        // Передаем product_id и quantity в функцию addOrder
-        addOrder(orderNumber, randomCourierId, product_id, quantity);
+        // Продолжаем с созданием заказа
+        generateOrderNumber();
     });
-});
 
+    // Функция генерации номера заказа и добавления заказа
+    const generateOrderNumber = () => {
+        const queryLastOrderNumber = 'SELECT MAX(CAST(order_number AS INTEGER)) AS last_order_number FROM Orders';
+        db.get(queryLastOrderNumber, [], (err, row) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
+            const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
+            notifyFreeCouriers(nextOrderNumber); // Вызов метода для уведомления курьеров с сгенерированным номером заказа
+        });
+    };
+
+    // Метод для уведомления случайных свободных активных курьеров о новом заказе
+    const notifyFreeCouriers = (orderNumber) => {
+        // Получаем список свободных активных курьеров
+        const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
+        db.all(queryFreeCouriers, [], (err, rows) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            // Если есть свободные активные курьеры, выбираем случайного и добавляем заказ
+            if (rows.length > 0) {
+                const randomCourierIndex = Math.floor(Math.random() * rows.length);
+                const randomCourierId = rows[randomCourierIndex].courier_id;
+                addOrder(orderNumber, randomCourierId);
+            } else {
+                // Если нет свободных активных курьеров, просто добавляем заказ без назначения курьера
+                addOrder(orderNumber, null);
+            }
+        });
+    };
+
+    // Функция добавления заказа в таблицу Orders
+    const addOrder = (orderNumber, courierId) => {
+        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            const orderId = this.lastID;
+            const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+            db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                // Обновляем информацию о курьере в базе данных
+                updateCourier(orderNumber, courierId);
+      
+                res.json({ id: orderId });
+            });
+        });
+    };
 
     // Функция обновления информации о курьере
     const updateCourier = (orderNumber, courierId) => {
