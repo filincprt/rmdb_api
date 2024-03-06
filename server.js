@@ -995,7 +995,7 @@ app.post('/product-shipments', (req, res) => {
         products.forEach((product, index) => {
             const { product_id, quantity_received, expiry_date } = product;
             const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?)';
-            db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], function (err) {
+            db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], async function (err) {
                 if (err) {
                     console.error(err.message);
                     res.status(500).json({ error: 'Internal Server Error' });
@@ -1004,20 +1004,36 @@ app.post('/product-shipments', (req, res) => {
                     console.log(`New product shipment added with ID ${this.lastID}`);
                     // Если это последний товар, фиксируем транзакцию и возвращаем ответ
                     if (index === products.length - 1) {
-                        db.run('COMMIT', (err) => {
-                            if (err) {
-                                console.error(err.message);
-                                res.status(500).json({ error: 'Internal Server Error' });
-                            } else {
-                                res.json({ message: 'Product shipments added successfully' });
-                            }
-                        });
+                        try {
+                            // Обновляем количество товара в таблице Products
+                            await updateProductQuantities(products);
+                            db.run('COMMIT', (err) => {
+                                if (err) {
+                                    console.error(err.message);
+                                    res.status(500).json({ error: 'Internal Server Error' });
+                                } else {
+                                    res.json({ message: 'Product shipments added successfully' });
+                                }
+                            });
+                        } catch (error) {
+                            console.error(error);
+                            res.status(500).json({ error: 'Internal Server Error' });
+                        }
                     }
                 }
             });
         });
     });
 });
+
+async function updateProductQuantities(products) {
+    for (const product of products) {
+        const { product_id, quantity_received } = product;
+        const updateQuery = 'UPDATE Products SET quantity = quantity + ? WHERE id = ?';
+        await db.run(updateQuery, [quantity_received, product_id]);
+        console.log(`Quantity updated for product with ID ${product_id}`);
+    }
+}
 
 // PUT (update) a product shipment
 app.put('/product-shipments/:id', (req, res) => {
