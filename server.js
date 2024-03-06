@@ -1274,38 +1274,59 @@ app.post('/admin/login', async (req, res) => {
 //----------------------ORDERS-----------------------------
 
 
-// Получение всех заказов с деталями и общей стоимостью заказа
 app.get('/orders/details', (req, res) => {
     db.all(`SELECT Orders.id, Users.first_name || ' ' || Users.last_name AS user_name,
-                     Orders.order_number,
-                     Orders.delivery_time,
-                     Orders.address,
-                     Orders.user_comment,
-                     Couriers.courier_id,
-                     Couriers.Id_number AS courier_id,
-                     Couriers.first_name AS courier_first_name,
-                     Couriers.last_name AS courier_last_name,
-                     Products.name AS product_name,
-                     Order_Lines.quantity,
-                     Products.price,
-                     Status.name AS status,
-                     SUM(Products.price * Order_Lines.quantity) AS total_cost
-              FROM Users
-              JOIN Orders ON Users.id = Orders.user_id
-              LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
-              LEFT JOIN Products ON Order_Lines.product_id = Products.id
-              LEFT JOIN Status ON Orders.status_id = Status.id
-              LEFT JOIN Couriers ON Orders.courier_id = Couriers.courier_id
-              GROUP BY Orders.id`, (err, rows) => {
+                   Orders.order_number,
+                   Orders.delivery_time,
+                   Orders.address,
+                   Orders.user_comment,
+                   Couriers.courier_id,
+                   Couriers.Id_number AS courier_id,
+                   Couriers.first_name AS courier_first_name,
+                   Couriers.last_name AS courier_last_name,
+                   Status.name AS status
+            FROM Orders
+            JOIN Users ON Users.id = Orders.user_id
+            LEFT JOIN Status ON Orders.status_id = Status.id
+            LEFT JOIN Couriers ON Orders.courier_id = Couriers.courier_id
+            GROUP BY Orders.id`, (err, orders) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json({ orders: rows });
+
+        // Для каждого заказа получаем детали товаров
+        const promises = orders.map(order => {
+            return new Promise((resolve, reject) => {
+                const orderId = order.id;
+                db.all(`SELECT Products.name AS product_name,
+                               Order_Lines.quantity,
+                               Products.price
+                        FROM Order_Lines
+                        JOIN Products ON Order_Lines.product_id = Products.id
+                        WHERE Order_Lines.order_id = ?`, [orderId], (err, products) => {
+                    if (err) {
+                        reject(err.message);
+                        return;
+                    }
+                    order.products = products;
+                    resolve();
+                });
+            });
+        });
+
+        // Дожидаемся выполнения всех запросов и отправляем ответ
+        Promise.all(promises)
+            .then(() => {
+                res.json({ orders: orders });
+            })
+            .catch((error) => {
+                res.status(500).json({ error: error });
+            });
     });
 });
 
-// Получение заказа по ID с общей стоимостью заказа и всеми товарами
+// Получение заказа по ID с общей стоимостью заказа
 app.get('/orders/:id', (req, res) => {
     const id = req.params.id;
     db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name,
@@ -1314,27 +1335,33 @@ app.get('/orders/:id', (req, res) => {
                     Couriers.last_name AS courier_last_name,
                     Orders.address,
                     Couriers.courier_id,
-                    Status.name AS status,
-                    SUM(Products.price * Order_Lines.quantity) AS total_cost,
-                    GROUP_CONCAT(Products.name || " - " || Order_Lines.quantity) AS products
+                    Status.name AS status
             FROM Orders
             JOIN Users ON Orders.user_id = Users.id
-            LEFT JOIN Order_Lines ON Orders.id = Order_Lines.order_id
-            LEFT JOIN Products ON Order_Lines.product_id = Products.id
             LEFT JOIN Status ON Orders.status_id = Status.id
             LEFT JOIN Couriers ON Orders.courier_id = Couriers.courier_id
-            WHERE Orders.id = ?
-            GROUP BY Orders.id`, [id], (err, row) => {
+            WHERE Orders.id = ?`, [id], (err, order) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json({ order: row });
+
+        // Получаем детали товаров для данного заказа
+        db.all(`SELECT Products.name AS product_name,
+                       Order_Lines.quantity,
+                       Products.price
+                FROM Order_Lines
+                JOIN Products ON Order_Lines.product_id = Products.id
+                WHERE Order_Lines.order_id = ?`, [id], (err, products) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            order.products = products;
+            res.json({ order: order });
+        });
     });
 });
-
-
-
 
 
 // Добавление данных в таблицу Orders
