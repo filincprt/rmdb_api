@@ -1512,32 +1512,52 @@ const assignCourierToAnotherOrder = (currentOrderId, courierId) => {
             return;
         }
 
-        // Поиск ближайшего свободного заказа
-        const queryNearestOrder = `
-            SELECT id, order_number FROM Orders
-            WHERE courier_id IS NULL
-            ORDER BY id ASC
-            LIMIT 1
-        `;
-        db.get(queryNearestOrder, [], (err, nearestOrder) => {
+        // Получаем информацию о предыдущем курьере
+        const queryPrevCourier = 'SELECT * FROM Orders WHERE id = ?';
+        db.get(queryPrevCourier, [currentOrderId], (err, order) => {
             if (err) {
                 console.error(err);
                 return;
             }
 
-            // Если ближайший заказ найден
-            if (nearestOrder) {
-                const nearestOrderId = nearestOrder.id;
-                const nearestOrderNumber = nearestOrder.order_number;
-                // Назначаем ближайший заказ текущему курьеру
-                updateOrdersAndCourier(nearestOrderId, courierId, nearestOrderNumber, (err) => {
+            // Если предыдущий курьер найден
+            if (order && order.courier_id !== null) {
+                const prevCourierId = order.courier_id;
+                // Удаляем order_number у предыдущего курьера
+                updateCourier(null, prevCourierId, (err) => {
                     if (!err) {
-                        console.log(`Курьеру ${courierId} назначен ближайший заказ ${nearestOrderNumber}`);
+                        console.log(`Предыдущему курьеру ${prevCourierId} удален order_number.`);
                     }
                 });
-            } else {
-                console.log('Нет доступных заказов для назначения.');
             }
+
+            // Поиск ближайшего свободного заказа
+            const queryNearestOrder = `
+                SELECT id, order_number FROM Orders
+                WHERE courier_id IS NULL
+                ORDER BY id ASC
+                LIMIT 1
+            `;
+            db.get(queryNearestOrder, [], (err, nearestOrder) => {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+
+                // Если ближайший заказ найден
+                if (nearestOrder) {
+                    const nearestOrderId = nearestOrder.id;
+                    const nearestOrderNumber = nearestOrder.order_number;
+                    // Назначаем ближайший заказ текущему курьеру
+                    updateOrdersAndCourier(nearestOrderId, courierId, nearestOrderNumber, (err) => {
+                        if (!err) {
+                            console.log(`Курьеру ${courierId} назначен ближайший заказ ${nearestOrderNumber}`);
+                        }
+                    });
+                } else {
+                    console.log('Нет доступных заказов для назначения.');
+                }
+            });
         });
     });
 };
