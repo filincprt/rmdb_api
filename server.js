@@ -1368,7 +1368,7 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-    const { user_id, products, delivery_time, status_id, address, user_comment } = req.body;
+    const { user_id, products, delivery_time, address, user_comment } = req.body;
 
     // Проверяем наличие товаров и достаточное количество на складе для каждого продукта
     const checkProductAvailability = () => {
@@ -1434,38 +1434,41 @@ app.post('/orders', (req, res) => {
     };
 
     // Добавление заказа в таблицу Orders
-    const addOrder = (orderNumber, courierId) => {
-        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
+const addOrder = (orderNumber, courierId) => {
+    const status_id = 1; // Присваиваем значение 1 переменной status_id
 
-            const orderId = this.lastID;
-            const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-            const promises = products.map(({ product_id, quantity }) => {
-                return new Promise((resolve, reject) => {
-                    db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-                        if (err) {
-                            reject(err.message);
-                            return;
-                        }
-                        resolve();
-                    });
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        const orderId = this.lastID;
+        const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+        const promises = products.map(({ product_id, quantity }) => {
+            return new Promise((resolve, reject) => {
+                db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+                    if (err) {
+                        reject(err.message);
+                        return;
+                    }
+                    resolve();
                 });
             });
-
-            Promise.all(promises)
-                .then(() => {
-                    updateCourier(orderNumber, courierId);
-                    res.json({ id: orderId });
-                })
-                .catch((error) => {
-                    res.status(500).json({ error: error });
-                });
         });
-    };
+
+        Promise.all(promises)
+            .then(() => {
+                updateCourier(orderNumber, courierId);
+                res.json({ id: orderId });
+            })
+            .catch((error) => {
+                res.status(500).json({ error: error });
+            });
+    });
+};
+
 
     // Обновление информации о курьере
     const updateCourier = (orderNumber, courierId) => {
