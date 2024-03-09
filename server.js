@@ -148,6 +148,26 @@ app.post('/users/login', async (req, res) => {
     }
 });
 
+// Проверка существования пользователя по email
+app.get('/users/check', (req, res) => {
+    const email = req.query.email;
+
+    // Проверка наличия пользователя в базе данных
+    db.get('SELECT * FROM Users WHERE email = ?', [email], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (row) {
+            // Пользователь с таким email уже существует
+            res.json({ exists: true });
+        } else {
+            // Пользователя с таким email нет
+            res.json({ exists: false });
+        }
+    });
+});
+
 
 // Получение данных из таблицы Users без пароля
 app.get('/users', (req, res) => {
