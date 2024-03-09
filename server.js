@@ -169,11 +169,22 @@ app.post('/sendCodeVetifyRegisterEmail', (req, res) => {
 
     // Отправка email с кодом подтверждения
     const mailOptions = {
-        from: 'noreply.internet.cld.fiin@gmail.com',
-        to: email,
-        subject: 'Подтверждение регистрации',
-        text: `Ваш код подтверждения: ${code}`
-    };
+    from: 'noreply.internet.cld.fiin@gmail.com',
+    to: email,
+    subject: 'Подтверждение регистрации',
+    html: `
+        <div style="background-color: #f9f9f9; padding: 20px; font-family: Arial, sans-serif;">
+            <p style="font-size: 16px;">Приветствуем вас!</p>
+            <p style="font-size: 16px;">Для завершения регистрации в нашем интернет-магазине, введите следующий код подтверждения:</p>
+            <h2 style="color: #007bff; font-size: 24px;">${code}</h2>
+            <p style="font-size: 16px;">Спасибо за регистрацию в нашем магазине!</p>
+            <hr style="border: 0; border-top: 1px solid #ddd;">
+            <p style="font-size: 16px;">Если вы не регистрировались на нашем сайте, проигнорируйте это сообщение.</p>
+            <p style="font-size: 16px;">С уважением,<br>Команда поддержки CPRT</p>
+        </div>
+    `
+};
+
 
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
@@ -194,7 +205,6 @@ app.post('/sendCodeVetifyRegisterEmail', (req, res) => {
     });
 });
 
-// Метод для регистрации пользователя с проверкой кода подтверждения
 app.post('/register', (req, res) => {
     const { email, code, password } = req.body;
 
@@ -206,23 +216,35 @@ app.post('/register', (req, res) => {
         } else if (!row) {
             res.status(400).send('Неправильный код подтверждения.');
         } else {
-            db.run(`INSERT INTO Users (email, password) VALUES (?, ?)`, [email, password], function(err) {
+            // Проверка наличия пользователя с таким email в базе данных
+            db.get('SELECT * FROM Users WHERE email = ?', [email], (err, userRow) => {
                 if (err) {
-                    return res.status(500).json({ error: err.message });
+                    console.log(err);
+                    res.status(500).send('Ошибка при выполнении запроса.');
+                } else if (userRow) {
+                    res.status(400).send('Пользователь с таким email уже зарегистрирован.');
+                } else {
+                    // Добавление пользователя в базу данных
+                    db.run(`INSERT INTO Users (email, password) VALUES (?, ?)`, [email, password], function(err) {
+                        if (err) {
+                            return res.status(500).json({ error: err.message });
+                        }
+                        // Удаляем email и код из таблицы ConfirmationCodes
+                        db.run('DELETE FROM ConfirmationCodes WHERE email = ?', [email], function(err) {
+                            if (err) {
+                                console.log(err);
+                                res.status(500).send('Ошибка при удалении кода подтверждения.');
+                            } else {
+                                res.status(200).send('Пользователь успешно зарегистрирован.'); // Отправляем сообщение о успешной регистрации
+                            }
+                        });
+                    });
                 }
-                // Удаляем email и код из таблицы ConfirmationCodes
-                db.run('DELETE FROM ConfirmationCodes WHERE email = ?', [email], function(err) {
-                    if (err) {
-                        console.log(err);
-                        res.status(500).send('Ошибка при удалении кода подтверждения.');
-                    } else {
-                        res.status(200).send('Пользователь успешно зарегистрирован.'); // Отправляем сообщение о успешной регистрации
-                    }
-                });
             });
         }
     });
 });
+
 
 
 // Добавление нового пользователя с хэшированным паролем
