@@ -370,7 +370,7 @@ app.put('/users/:id', (req, res) => {
   const userId = req.params.id;
   const query = `
       UPDATE Users
-      SET email = ?, password = ?, first_name = ?, last_name = ?, delivery_address = ?
+      SET email = ?, first_name = ?, last_name = ?, delivery_address = ?
       WHERE id = ?`;
 
   db.run(query, [email, first_name, last_name, delivery_address, userId], function (err) {
