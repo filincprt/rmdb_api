@@ -375,6 +375,7 @@ app.put('/users/:id', (req, res) => {
 
   db.run(query, [email, first_name, last_name, delivery_address, userId], function (err) {
       if (err) {
+       console.error(err);
           res.status(500).json({ error: err.message });
           return;
       }
