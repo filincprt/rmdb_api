@@ -1334,6 +1334,29 @@ app.post('/admin/login', async (req, res) => {
 
 //----------------------REPORTS----------------------------
 
+app.get('/reports/totalsalesday', (req, res) => {
+    const query = 'SELECT * FROM OrderReport';
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
+
+app.post('/reports/totalsalesdayperiod', (req, res) => {
+    const { startDate, endDate } = req.body;
+    
+    const query = 'SELECT * FROM OrderReport WHERE report_date BETWEEN ? AND ?';
+    db.all(query, [startDate, endDate], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
 
 //----------------------ORDERS-----------------------------
 
