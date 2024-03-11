@@ -180,6 +180,27 @@ app.get('/users', (req, res) => {
     });
 });
 
+// Получение данных о пользователе по его идентификатору без пароля
+app.get('/users/:userId', (req, res) => {
+    const userId = req.params.userId;
+    
+    db.get('SELECT id, email, delivery_address, first_name, last_name FROM Users WHERE id = ?', [userId], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        // Проверяем, найден ли пользователь
+        if (!row) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        res.json({ user: row });
+    });
+});
+
+
 //--------------------------------------------
 
 // Метод для отправки кода подтверждения на email
