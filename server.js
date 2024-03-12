@@ -1348,15 +1348,16 @@ app.get('/reports/totalsalesday', (req, res) => {
 app.post('/reports/totalsalesdayperiod', (req, res) => {
     const { startDate, endDate } = req.body;
     
-    const query = 'SELECT * FROM OrderReport WHERE report_date BETWEEN ? AND ?';
-    db.all(query, [startDate, endDate], (err, rows) => {
+    const query = 'SELECT SUM(total_orders) as total_orders, SUM(delivered_orders) as delivered_orders, SUM(cancelled_orders) as cancelled_orders, SUM(total_profit) as total_profit FROM OrderReport WHERE report_date BETWEEN ? AND ?';
+    db.get(query, [startDate, endDate], (err, row) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json(rows);
+        res.json(row);
     });
 });
+
 
 //----------------------ORDERS-----------------------------
 
