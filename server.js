@@ -660,6 +660,50 @@ app.get('/couriers/:id', (req, res) => {
   });
 });
 
+// Получение всех заказов, связанных с определенным курьером
+app.get('/courier/orders/:id', (req, res) => {
+    const courierId = req.params.id;
+
+    // Запрос к базе данных для получения всех заказов, связанных с курьером
+    db.all(`SELECT Orders.*, 
+                   Users.first_name || " " || Users.last_name AS user_name,
+                   Users.delivery_address AS user_address,
+                   Couriers.first_name AS courier_first_name,
+                   Couriers.last_name AS courier_last_name,
+                   Couriers.contact_number AS courier_contact_number,
+                   Status.name AS status
+            FROM Orders
+            JOIN Users ON Orders.user_id = Users.id
+            JOIN Couriers ON Orders.courier_id = Couriers.courier_id
+            LEFT JOIN Status ON Orders.status_id = Status.id
+            WHERE Couriers.courier_id = ?`, [courierId], (err, orders) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        // Для каждого заказа получаем детали товаров
+        orders.forEach(order => {
+            db.all(`SELECT Products.name AS product_name,
+                           Order_Lines.quantity,
+                           Products.price,
+                           Order_Lines.product_id as productId
+                    FROM Order_Lines
+                    JOIN Products ON Order_Lines.product_id = Products.id
+                    WHERE Order_Lines.order_id = ?`, [order.id], (err, products) => {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                order.products = products;
+            });
+        });
+
+        res.json({ orders: orders });
+    });
+});
+
+
 //-----------------------------------------------------------------
 
 app.post('/confirm_order/:orderId/:courierId', (req, res) => {
