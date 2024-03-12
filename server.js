@@ -1367,6 +1367,7 @@ app.get('/orders/details', (req, res) => {
                    Orders.order_number,
                    Orders.delivery_time,
                    Orders.address,
+                   Orders.reason_of_refusal,
                    Orders.user_comment,
                    Couriers.courier_id,
                    Couriers.Id_number AS courier_id,
