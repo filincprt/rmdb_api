@@ -1580,16 +1580,20 @@ const addOrder = (orderNumber, courierId) => {
 // Редактирование данных в таблице Orders
 app.put('/orders/:id', (req, res) => {
   const orderId = req.params.id;
-  const { status, courier_id, address } = req.body;
+  const { status, courier_id, address, reason_of_refusal } = req.body;
 
   // Обновление данных в таблице Orders
-  const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=? WHERE id=?';
-  db.run(queryOrder, [status, courier_id, address, orderId], function (err) {
-    if (err) {
-      console.error(err);
-      res.status(500).json({ error: err.message });
-      return;
-    }
+  const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=?, reason_of_refusal=? WHERE id=?';
+
+// Проверяем, было ли передано значение reason_of_refusal в запросе
+const params = [status, courier_id, address, req.body.reason_of_refusal !== undefined ? req.body.reason_of_refusal : null, orderId];
+
+db.run(queryOrder, params, function (err) {
+  if (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+    return;
+  }
 
     if (this.changes > 0) {
   console.log('Изменения в таблице Orders были успешно внесены.');
