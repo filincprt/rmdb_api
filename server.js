@@ -1423,6 +1423,7 @@ app.get('/orders/:id', (req, res) => {
                     Couriers.first_name AS courier_first_name,
                     Couriers.last_name AS courier_last_name,
                     Orders.address,
+                    Orders.reason_of_refusal,
                     Couriers.courier_id,
                     Status.name AS status
             FROM Orders
