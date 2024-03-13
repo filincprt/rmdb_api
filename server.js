@@ -744,13 +744,27 @@ app.put('/couriers/:id', (req, res) => {
     const { first_name, last_name, second_name, contact_number, pass_courier } = req.body;
 
     // Проверка наличия всех обязательных полей
-    if (!first_name || !last_name || !contact_number || !pass_courier) {
+    if (!first_name || !last_name || !contact_number) {
         return res.status(400).json({ error: 'Пожалуйста, заполните все обязательные поля.' });
     }
 
+    // Подготовка списка параметров для запроса SQL
+    const params = [first_name, last_name, second_name, contact_number];
+    let sqlQuery = `UPDATE Couriers SET first_name = ?, last_name = ?, second_name = ?, contact_number = ?`;
+
+    // Если есть значение для pass_courier, добавляем его в запрос и параметры
+    if (pass_courier !== undefined) {
+        sqlQuery += `, pass_courier = ?`;
+        params.push(pass_courier);
+    }
+
+    sqlQuery += ` WHERE courier_id = ?`;
+
     // Обновление информации о курьере в базе данных
-    const stmt = db.prepare(`UPDATE Couriers SET first_name = ?, last_name = ?, second_name = ?, contact_number = ?, pass_courier = ? WHERE courier_id = ?`);
-    stmt.run(first_name, last_name, second_name, contact_number, pass_courier, courierId, (err) => {
+    const stmt = db.prepare(sqlQuery);
+    params.push(courierId);
+    
+    stmt.run(params, (err) => {
         if (err) {
             return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
         }
