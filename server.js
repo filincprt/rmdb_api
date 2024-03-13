@@ -884,6 +884,37 @@ app.post('/courier_login', (req, res) => {
     });
 });
 
+app.put('/couriers/:id/toggleStatus', (req, res) => {
+  const courierId = req.params.id;
+
+  // Получение текущего статуса курьера из базы данных
+  db.get(`SELECT status_id FROM Couriers WHERE courier_id = ?`, [courierId], (err, row) => {
+    if (err) {
+      console.error(err.message);
+      res.status(500).send('Internal Server Error');
+    } else {
+      // Проверка наличия курьера с указанным ID
+      if (!row) {
+        res.status(404).send('Courier not found');
+        return;
+      }
+
+      const newStatusId = row.status_id === 1 ? 2 : 1; // Инвертирование текущего статуса курьера
+
+      // Обновление статуса курьера в базе данных
+      db.run(`UPDATE Couriers SET status_id = ? WHERE courier_id = ?`, [newStatusId, courierId], function (err) {
+        if (err) {
+          console.error(err.message);
+          res.status(500).send('Internal Server Error');
+        } else {
+          console.log(`Courier status updated successfully. Rows affected: ${this.changes}`);
+          res.status(200).send('Courier status updated successfully');
+        }
+      });
+    }
+  });
+});
+
 
 //---------------------PRODUCTS----------------------
 
