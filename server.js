@@ -868,22 +868,22 @@ app.post('/courier_register', async (req, res) => {
     }
 });
 
-// Метод для авторизации курьера
 app.post('/courier_login', (req, res) => {
     const { login_courier, pass_courier } = req.body;
 
     // Поиск курьера по логину и паролю в базе данных
-    db.get(`SELECT * FROM Couriers WHERE login_courier = ? AND pass_courier = ?`, [login_courier, pass_courier], (err, row) => {
+    db.get(`SELECT courier_id FROM Couriers WHERE login_courier = ? AND pass_courier = ?`, [login_courier, pass_courier], (err, row) => {
         if (err) {
             return res.status(500).json({ error: 'Произошла ошибка при выполнении запроса.' });
         }
         if (!row) {
             return res.status(404).json({ error: 'Курьер с указанными учетными данными не найден.' });
         }
-        // Возвращаем информацию о курьере в случае успешной авторизации
-        res.status(200).json(row);
+        // Возвращаем только courier_id в случае успешной авторизации
+        res.status(200).json({ courier_id: row.courier_id });
     });
 });
+
 
 //---------------------PRODUCTS----------------------
 
