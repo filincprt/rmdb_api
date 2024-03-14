@@ -2268,6 +2268,85 @@ app.delete('/products/decrement/:barcode', (req, res) => {
   });
 });
 
+//------------------------------AUTOFUNCTION----------------------------------------
+
+// Функция для проверки и назначения заказов свободным курьерам
+function checkAndAssignOrdersToCouriers() {
+    const interval = setInterval(() => {
+        // Запрос к базе данных для выбора свободных и активных курьеров
+        const query = `
+            SELECT courier_id
+            FROM Couriers
+            WHERE status_id = 1 AND (cooldown_to_order IS NULL OR DATETIME(cooldown_to_order, '+1 minute') < DATETIME('now')) AND order_number IS NULL
+        `;
+
+        db.all(query, [], (err, couriers) => {
+            if (err) {
+                console.error(err.message);
+                return;
+            }
+
+            if (couriers.length > 0) {
+                // Запрос к базе данных для выбора заказов без назначенных курьеров
+                const ordersQuery = `
+                    SELECT id
+                    FROM Orders
+                    WHERE courier_id IS NULL
+                `;
+
+                db.all(ordersQuery, [], (err, orders) => {
+                    if (err) {
+                        console.error(err.message);
+                        return;
+                    }
+
+                    if (orders.length > 0) {
+                        // Проходим по каждому свободному курьеру и назначаем заказы
+                        couriers.forEach(courier => {
+                            // Выбираем первый заказ из списка без курьера и назначаем его курьеру
+                            const order = orders.shift();
+                            const orderId = order.id;
+                            const courierId = courier.courier_id;
+
+                            // Обновляем заказ, чтобы назначить его курьеру
+                            const assignOrderQuery = `
+                                UPDATE Orders
+                                SET courier_id = ?,
+                                    assign_time = DATETIME('now')
+                                WHERE id = ?
+                            `;
+
+                            db.run(assignOrderQuery, [courierId, orderId], (err) => {
+                                if (err) {
+                                    console.error(err.message);
+                                    return;
+                                }
+
+                                // Обновляем информацию о заказе в таблице Couriers
+                                const updateCourierQuery = `
+                                    UPDATE Couriers
+                                    SET order_number = ?
+                                    WHERE courier_id = ?
+                                `;
+
+                                db.run(updateCourierQuery, [orderId, courierId], (err) => {
+                                    if (err) {
+                                        console.error(err.message);
+                                        return;
+                                    }
+                                });
+                            });
+                        });
+                    }
+                });
+            }
+        });
+    }, 30000); // Интервал в миллисекундах (30 секунд)
+}
+
+// Запуск функции проверки и назначения заказов курьерам
+checkAndAssignOrdersToCouriers();
+
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
