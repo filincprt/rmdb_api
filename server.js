@@ -2060,8 +2060,8 @@ app.put('/orders/:orderId/items/:itemId/replace/:replacementId', (req, res) => {
 app.put('/couriers/:id/rejectOrder/:orderId', (req, res) => {
   const courierId = req.params.id;
   const orderId = req.params.orderId;
-  const rejectionTime = new Date().toISOString();
-
+  const rejectionTime = new Date(row.creation_time).toISOString();
+  creationTimeUTC.setHours(creationTimeUTC.getHours() + 5);
   // Обновление cooldown_to_order для курьера
   const updateCooldownQuery = `
     UPDATE Couriers
