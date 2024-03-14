@@ -2276,6 +2276,7 @@ app.delete('/products/decrement/:barcode', (req, res) => {
 function checkAndAssignOrdersToCouriers() {
     const interval = setInterval(() => {
         // Запрос к базе данных для выбора свободных и активных курьеров
+     console.log('Выполняется поиск свободных курьеров и назначение им заказов...');
         const query = `
             SELECT courier_id, cooldown_to_order
             FROM Couriers
