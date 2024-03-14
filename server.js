@@ -2351,6 +2351,63 @@ function checkAndAssignOrdersToCouriers() {
 }
 
 
+// Функция для отмены заказа по прошествии 20 минут
+function cancelOrderAfterTwentyMinutes() {
+    setInterval(() => {
+        const twentyMinutesAgo = new Date(Date.now() - 1 * 60 * 1000).toISOString(); // Время 20 минут назад
+
+        // Обновляем статус заказов, где время создания заказа больше 20 минут назад и курьер не назначен
+        const cancelUnassignedOrdersQuery = `
+            UPDATE Orders
+            SET status_id = 6, -- Отменен
+                reason_of_refusal = 'Прошло 20 минут без назначения курьера'
+            WHERE status_id = 1 -- Новый
+            AND delivery_time < ?
+            AND courier_id IS NULL
+        `;
+        db.run(cancelUnassignedOrdersQuery, [twentyMinutesAgo], function (err) {
+            if (err) {
+                console.error(err.message);
+                return;
+            }
+            console.log(`Canceled ${this.changes} unassigned orders after 20 minutes`);
+        });
+
+        // Обновляем статус заказов, где курьер назначен, но статус заказа не изменился после 20 минут
+        const cancelAssignedOrdersQuery = `
+            UPDATE Orders
+            SET status_id = 6, -- Отменен
+                reason_of_refusal = 'Прошло 20 минут с назначением курьера без изменения статуса заказа'
+            WHERE status_id = 1 -- Новый
+            AND courier_id IS NOT NULL
+            AND delivery_time < ?
+        `;
+        db.run(cancelAssignedOrdersQuery, [twentyMinutesAgo], function (err) {
+            if (err) {
+                console.error(err.message);
+                return;
+            }
+            console.log(`Canceled ${this.changes} assigned orders after 20 minutes`);
+        });
+
+        // Очищаем поле order_number у курьера
+        const clearCourierOrderNumberQuery = `
+            UPDATE Couriers
+            SET order_number = NULL
+            WHERE order_number IS NOT NULL
+        `;
+        db.run(clearCourierOrderNumberQuery, function (err) {
+            if (err) {
+                console.error(err.message);
+                return;
+            }
+            console.log(`Cleared order_number field for couriers`);
+        });
+    }, 60 * 1000); // Проверяем каждую минуту
+}
+
+cancelOrderAfterTwentyMinutes();
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
