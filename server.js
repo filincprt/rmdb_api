@@ -2350,11 +2350,10 @@ function checkAndAssignOrdersToCouriers() {
     }, 30000); // Интервал в миллисекундах (30 секунд)
 }
 
-
 // Функция для отмены заказа по прошествии 20 минут
 function cancelOrderAfterTwentyMinutes() {
     setInterval(() => {
-        const twentyMinutesAgo = new Date(Date.now() - 1 * 60 * 1000).toISOString(); // Время 20 минут назад
+        const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString(); // Время 20 минут назад
 
         // Обновляем статус заказов, где время создания заказа больше 20 минут назад и курьер не назначен
         const cancelUnassignedOrdersQuery = `
@@ -2371,23 +2370,6 @@ function cancelOrderAfterTwentyMinutes() {
                 return;
             }
             console.log(`Canceled ${this.changes} unassigned orders after 20 minutes`);
-        });
-
-        // Обновляем статус заказов, где курьер назначен, но статус заказа не изменился после 20 минут
-        const cancelAssignedOrdersQuery = `
-            UPDATE Orders
-            SET status_id = 4, -- Отменен
-                reason_of_refusal = 'Прошло 20 минут с назначением курьера без изменения статуса заказа'
-            WHERE status_id = 1 -- Новый
-            AND courier_id IS NOT NULL
-            AND delivery_time < ?
-        `;
-        db.run(cancelAssignedOrdersQuery, [twentyMinutesAgo], function (err) {
-            if (err) {
-                console.error(err.message);
-                return;
-            }
-            console.log(`Canceled ${this.changes} assigned orders after 20 minutes`);
         });
 
         // Очищаем поле order_number у курьера
