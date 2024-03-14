@@ -2359,7 +2359,7 @@ function cancelOrderAfterTwentyMinutes() {
         // Обновляем статус заказов, где время создания заказа больше 20 минут назад и курьер не назначен
         const cancelUnassignedOrdersQuery = `
             UPDATE Orders
-            SET status_id = 6, -- Отменен
+            SET status_id = 4, -- Отменен
                 reason_of_refusal = 'Прошло 20 минут без назначения курьера'
             WHERE status_id = 1 -- Новый
             AND delivery_time < ?
@@ -2376,7 +2376,7 @@ function cancelOrderAfterTwentyMinutes() {
         // Обновляем статус заказов, где курьер назначен, но статус заказа не изменился после 20 минут
         const cancelAssignedOrdersQuery = `
             UPDATE Orders
-            SET status_id = 6, -- Отменен
+            SET status_id = 4, -- Отменен
                 reason_of_refusal = 'Прошло 20 минут с назначением курьера без изменения статуса заказа'
             WHERE status_id = 1 -- Новый
             AND courier_id IS NOT NULL
