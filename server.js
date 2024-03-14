@@ -944,7 +944,7 @@ app.put('/couriers/:id/toggleStatus', (req, res) => {
             res.status(200).send('Courier status updated successfully');
 
             // Если новый статус курьера "Активный", присваиваем ему неприсвоенный заказ
-            if (newStatusId === 2) {
+            if (newStatusId === 1) {
               assignOrderToCourier(courierId);
             }
           }
