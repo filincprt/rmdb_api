@@ -2052,6 +2052,58 @@ app.put('/orders/:orderId/items/:itemId/replace/:replacementId', (req, res) => {
 });
 
 
+//отказ от заказа курьером
+app.put('/couriers/:id/rejectOrder/:orderId', (req, res) => {
+  const courierId = req.params.id;
+  const orderId = req.params.orderId;
+  const rejectionTime = new Date().toISOString();
+
+  // Обновление cooldown_to_order для курьера
+  const updateCooldownQuery = `
+    UPDATE Couriers
+    SET cooldown_to_order = ?
+    WHERE courier_id = ?
+  `;
+
+  db.run(updateCooldownQuery, [rejectionTime, courierId], (err) => {
+    if (err) {
+      console.error(err.message);
+      res.status(500).send('Internal Server Error');
+      return;
+    }
+
+    // Передача заказа другому активному курьеру без заказа
+    const transferOrderQuery = `
+      UPDATE Orders
+      SET courier_id = (
+        SELECT courier_id
+        FROM Couriers
+        WHERE courier_id <> ? AND status_id = 1 AND (cooldown_to_order IS NULL OR DATETIME(cooldown_to_order, '+1 minute') < DATETIME('now'))
+        LIMIT 1
+      ),
+      reason_of_refusal = ?
+      WHERE id = ?
+    `;
+
+    db.run(transferOrderQuery, [courierId, rejectionTime, orderId], function (err) {
+      if (err) {
+        console.error(err.message);
+        res.status(500).send('Internal Server Error');
+        return;
+      }
+
+      if (this.changes > 0) {
+        console.log(`Order ${orderId} rejected by courier ${courierId} and transferred to another courier`);
+        res.status(200).send('Order rejected and transferred to another courier successfully');
+      } else {
+        console.log(`Order ${orderId} rejected by courier ${courierId}`);
+        res.status(200).send('Order rejected successfully, but no active courier without an order found to transfer the order');
+      }
+    });
+  });
+});
+
+
 //----------------------------------Status----------------------------
 
 // Метод GET для получения всех статусов
