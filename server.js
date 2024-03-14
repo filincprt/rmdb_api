@@ -23,6 +23,8 @@ app.get('/ping', (req, res) => {
   res.status(200).send('OK');
 });
 
+checkAndAssignOrdersToCouriers();
+
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -2275,9 +2277,9 @@ function checkAndAssignOrdersToCouriers() {
     const interval = setInterval(() => {
         // Запрос к базе данных для выбора свободных и активных курьеров
         const query = `
-            SELECT courier_id
+            SELECT courier_id, cooldown_to_order
             FROM Couriers
-            WHERE status_id = 1 AND (cooldown_to_order IS NULL OR DATETIME(cooldown_to_order, '+1 minute') < DATETIME('now')) AND order_number IS NULL
+            WHERE status_id = 1 AND (cooldown_to_order IS NULL OR strftime('%s', cooldown_to_order) < strftime('%s', 'now', '-1 minute')) AND order_number IS NULL
         `;
 
         db.all(query, [], (err, couriers) => {
@@ -2343,9 +2345,6 @@ function checkAndAssignOrdersToCouriers() {
         });
     }, 30000); // Интервал в миллисекундах (30 секунд)
 }
-
-// Запуск функции проверки и назначения заказов курьерам
-checkAndAssignOrdersToCouriers();
 
 
 app.listen(port, () => {
