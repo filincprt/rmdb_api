@@ -1,3 +1,5 @@
+process.env.TZ = 'UTC+5';
+
 const express = require('express');
 const sqlite3 = require('sqlite3');
 const bodyParser = require('body-parser');
