@@ -2076,16 +2076,17 @@ app.put('/couriers/:id/rejectOrder/:orderId', (req, res) => {
 
     // Передача заказа другому активному курьеру без заказа
     const transferOrderQuery = `
-      UPDATE Orders
-      SET courier_id = (
+    UPDATE Orders
+    SET courier_id = (
         SELECT courier_id
         FROM Couriers
-        WHERE courier_id <> ? AND status_id = 1 AND (cooldown_to_order IS NULL OR DATETIME(cooldown_to_order, '+1 minute') < DATETIME('now'))
+        WHERE courier_id <> ? AND status_id = 1 AND order_number IS NULL AND (cooldown_to_order IS NULL OR DATETIME(cooldown_to_order, '+1 minute') < DATETIME('now'))
         LIMIT 1
-      ),
-      reason_of_refusal = ?
-      WHERE id = ?
-    `;
+    ),
+    reason_of_refusal = ?
+    WHERE id = ?
+`;
+
 
     db.run(transferOrderQuery, [courierId, rejectionTime, orderId], function (err) {
       if (err) {
