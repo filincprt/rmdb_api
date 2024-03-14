@@ -2314,8 +2314,7 @@ function checkAndAssignOrdersToCouriers() {
                             // Обновляем заказ, чтобы назначить его курьеру
                             const assignOrderQuery = `
                                 UPDATE Orders
-                                SET courier_id = ?,
-                                    assign_time = DATETIME('now')
+                                SET courier_id = ?
                                 WHERE id = ?
                             `;
 
