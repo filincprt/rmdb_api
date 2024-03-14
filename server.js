@@ -2061,9 +2061,11 @@ app.put('/couriers/:id/rejectOrder/:orderId', (req, res) => {
   // Обновление cooldown_to_order для курьера
   const updateCooldownQuery = `
     UPDATE Couriers
-    SET cooldown_to_order = ?
+    SET cooldown_to_order = ?,
+        order_number = null
     WHERE courier_id = ?
   `;
+
 
   db.run(updateCooldownQuery, [rejectionTime, courierId], (err) => {
     if (err) {
