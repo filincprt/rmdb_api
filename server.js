@@ -2295,8 +2295,8 @@ app.delete('/products/decrement/:barcode', (req, res) => {
 // Функция для проверки и назначения заказов свободным курьерам
 function checkAndAssignOrdersToCouriers() {
     const interval = setInterval(() => {
-        console.log('Выполняется поиск свободных курьеров и назначение им заказов...');
-
+        // Запрос к базе данных для выбора свободных и активных курьеров
+     console.log('Выполняется поиск свободных курьеров и назначение им заказов...');
         const query = `
             SELECT courier_id, cooldown_to_order
             FROM Couriers
@@ -2310,6 +2310,7 @@ function checkAndAssignOrdersToCouriers() {
             }
 
             if (couriers.length > 0) {
+                // Запрос к базе данных для выбора заказов без назначенных курьеров
                 const ordersQuery = `
                     SELECT id
                     FROM Orders
@@ -2323,15 +2324,17 @@ function checkAndAssignOrdersToCouriers() {
                     }
 
                     if (orders.length > 0) {
+                        // Проходим по каждому свободному курьеру и назначаем заказы
                         couriers.forEach(courier => {
+                            // Выбираем первый заказ из списка без курьера и назначаем его курьеру
                             const order = orders.shift();
                             const orderId = order.id;
                             const courierId = courier.courier_id;
 
+                            // Обновляем заказ, чтобы назначить его курьеру
                             const assignOrderQuery = `
                                 UPDATE Orders
-                                SET courier_id = ?,
-                                    cooldown_to_order = datetime('now')
+                                SET courier_id = ?
                                 WHERE id = ?
                             `;
 
@@ -2341,6 +2344,7 @@ function checkAndAssignOrdersToCouriers() {
                                     return;
                                 }
 
+                                // Обновляем информацию о заказе в таблице Couriers
                                 const updateCourierQuery = `
                                     UPDATE Couriers
                                     SET order_number = ?
@@ -2359,7 +2363,7 @@ function checkAndAssignOrdersToCouriers() {
                 });
             }
         });
-    }, 30000);
+    }, 30000); // Интервал в миллисекундах (30 секунд)
 }
 
 // Функция для отмены заказа по прошествии 20 минут
