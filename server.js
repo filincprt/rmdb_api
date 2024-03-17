@@ -1616,73 +1616,43 @@ app.post('/orders', (req, res) => {
 
             let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
             const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
-            notifyFreeCouriers(nextOrderNumber); // Вызов метода для уведомления курьеров с сгенерированным номером заказа
+            addOrder(nextOrderNumber, null); // Вызываем функцию добавления заказа с присваиванием курьера null
         });
     };
 
-    // Уведомление свободных курьеров о новом заказе
-    const notifyFreeCouriers = (orderNumber) => {
-        const queryFreeCouriers = 'SELECT courier_id FROM Couriers WHERE status_id = 1 AND order_number IS NULL';
-        db.all(queryFreeCouriers, [], (err, rows) => {
+    // Добавление заказа в таблицу Orders
+    const addOrder = (orderNumber, courierId) => {
+        const status_id = 1; // Присваиваем значение 1 переменной status_id
+        const created_time = new Date(Date.now()).toISOString(); // Текущее время +5 часов
+
+        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment, created_time], function (err) {
             if (err) {
                 res.status(500).json({ error: err.message });
                 return;
             }
 
-            if (rows.length > 0) {
-                const randomCourierIndex = Math.floor(Math.random() * rows.length);
-                const randomCourierId = rows[randomCourierIndex].courier_id;
-                addOrder(orderNumber, randomCourierId);
-            } else {
-                addOrder(orderNumber, null);
-            }
-        });
-    };
-
-    // Добавление заказа в таблицу Orders
-const addOrder = (orderNumber, courierId) => {
-    const status_id = 1; // Присваиваем значение 1 переменной status_id
-    const created_time = new Date(Date.now()).toISOString(); // Текущее время +5 часов
-
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment, created_time], function (err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        const orderId = this.lastID;
-        const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-        const promises = products.map(({ product_id, quantity }) => {
-            return new Promise((resolve, reject) => {
-                db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-                    if (err) {
-                        reject(err.message);
-                        return;
-                    }
-                    resolve();
+            const orderId = this.lastID;
+            const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+            const promises = products.map(({ product_id, quantity }) => {
+                return new Promise((resolve, reject) => {
+                    db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+                        if (err) {
+                            reject(err.message);
+                            return;
+                        }
+                        resolve();
+                    });
                 });
             });
-        });
 
-        Promise.all(promises)
-            .then(() => {
-                updateCourier(orderNumber, courierId);
-                res.json({ id: orderId });
-            })
-            .catch((error) => {
-                res.status(500).json({ error: error });
-            });
-    });
-};
-
-    // Обновление информации о курьере
-    const updateCourier = (orderNumber, courierId) => {
-        const queryUpdateCourier = 'UPDATE Couriers SET order_number = ? WHERE courier_id = ?';
-        db.run(queryUpdateCourier, [orderNumber, courierId], function (err) {
-            if (err) {
-                console.error('Ошибка при обновлении информации о курьере:', err);
-            }
+            Promise.all(promises)
+                .then(() => {
+                    res.json({ id: orderId });
+                })
+                .catch((error) => {
+                    res.status(500).json({ error: error });
+                });
         });
     };
 
@@ -1693,6 +1663,7 @@ const addOrder = (orderNumber, courierId) => {
             res.status(400).json({ error: error });
         });
 });
+
 
 
 // Редактирование данных в таблице Orders
