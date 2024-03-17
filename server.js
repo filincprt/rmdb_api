@@ -1675,9 +1675,10 @@ app.post('/orders', (req, res) => {
     // Добавление заказа в таблицу Orders
 const addOrder = (orderNumber, courierId) => {
     const status_id = 1; // Присваиваем значение 1 переменной status_id
+    const created_time = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(); // Текущее время +5 часов
 
-    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment], function (err) {
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment, created_time], function (err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -1707,7 +1708,6 @@ const addOrder = (orderNumber, courierId) => {
             });
     });
 };
-
 
     // Обновление информации о курьере
     const updateCourier = (orderNumber, courierId) => {
@@ -2369,13 +2369,13 @@ function checkAndAssignOrdersToCouriers() {
 // Функция для отмены заказа по прошествии 20 минут
 function cancelOrderAfterTwentyMinutes() {
     setInterval(() => {
-        const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString(); // Время 20 минут назад
+        const twentyMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // Время 20 минут назад
 
         // Обновляем статус заказов, где время создания заказа больше 20 минут назад и курьер не назначен
         const cancelUnassignedOrdersQuery = `
             UPDATE Orders
             SET status_id = 4, -- Отменен
-                reason_of_refusal = 'Прошло 20 минут без назначения курьера'
+                reason_of_refusal = 'Нет свободных курьеров'
             WHERE status_id = 1 -- Новый
             AND delivery_time < ?
             AND courier_id IS NULL
