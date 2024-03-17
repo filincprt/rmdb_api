@@ -2006,8 +2006,7 @@ app.put('/couriers/:id/rejectOrder/:orderId', (req, res) => {
   const updateCooldownQuery = `
     UPDATE Couriers
     SET cooldown_to_order = ?,
-        order_number = null,
-        offered_order = 0,
+        order_number = null
     WHERE courier_id = ?
   `;
 
