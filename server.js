@@ -2112,6 +2112,22 @@ app.put('/couriers/:id/rejectOrder/:orderId', (req, res) => {
   });
 });
 
+//Принятие заказа курьером
+app.put('/couriers/:courierId/acceptOrder/:orderId', (req, res) => {
+    const courierId = req.params.courierId;
+    const orderId = req.params.orderId;
+
+    // Обновляем статус заказа на "В сборке"
+    db.run('UPDATE Orders SET status_id = 5 WHERE id = ? AND courier_id = ?', [orderId, courierId], (err) => {
+        if (err) {
+            console.error(err.message);
+            return res.status(500).json({ error: 'Failed to update order status' });
+        }
+
+        return res.status(200).json({ message: 'Order accepted successfully' });
+    });
+});
+
 
 //----------------------------------Status----------------------------
 
