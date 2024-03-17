@@ -902,6 +902,8 @@ app.post('/courier_login', (req, res) => {
     });
 });
 
+
+//смена статуса курьера - активность
 app.put('/couriers/:id/toggleStatus', (req, res) => {
   const courierId = req.params.id;
 
@@ -946,11 +948,6 @@ app.put('/couriers/:id/toggleStatus', (req, res) => {
           } else {
             console.log(`Courier status updated successfully. Rows affected: ${this.changes}`);
             res.status(200).send('Courier status updated successfully');
-
-            // Если новый статус курьера "Активный", присваиваем ему неприсвоенный заказ
-            if (newStatusId === 1) {
-              assignOrderToCourier(courierId);
-            }
           }
         });
       }
@@ -958,36 +955,6 @@ app.put('/couriers/:id/toggleStatus', (req, res) => {
   });
 });
 
-// Функция для присвоения неприсвоенного заказа курьеру
-function assignOrderToCourier(courierId) {
-  // Запрос SQL для выбора неприсвоенного заказа
-  const selectUnassignedOrderQuery = `
-    SELECT id
-    FROM Orders
-    WHERE courier_id IS NULL
-    LIMIT 1
-  `;
-
-  db.get(selectUnassignedOrderQuery, [], (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return;
-    }
-
-    if (row) {
-      const orderId = row.id;
-
-      // Обновление заказа с присвоением курьера
-      db.run(`UPDATE Orders SET courier_id = ? WHERE id = ?`, [courierId, orderId], function (err) {
-        if (err) {
-          console.error(err.message);
-        } else {
-          console.log(`Order ${orderId} assigned to courier ${courierId}`);
-        }
-      });
-    }
-  });
-}
 
 
 //---------------------PRODUCTS----------------------
