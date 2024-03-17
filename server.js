@@ -1674,54 +1674,54 @@ app.put('/orders/:id', (req, res) => {
   // Обновление данных в таблице Orders
   const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=?, address=?, reason_of_refusal=? WHERE id=?';
 
-// Проверяем, было ли передано значение reason_of_refusal в запросе
-const params = [status, courier_id, address, req.body.reason_of_refusal !== undefined ? req.body.reason_of_refusal : null, orderId];
+  // Проверяем, было ли передано значение reason_of_refusal в запросе
+  const params = [status, courier_id, address, req.body.reason_of_refusal !== undefined ? req.body.reason_of_refusal : null, orderId];
 
-db.run(queryOrder, params, function (err) {
-  if (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-    return;
-  }
+  db.run(queryOrder, params, function (err) {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+      return;
+    }
 
     if (this.changes > 0) {
-  console.log('Изменения в таблице Orders были успешно внесены.');
-  // Проверка, было ли изменение статуса заказа на "Доставлен" или "Отменён"
-  if (status === 3 || status === 4) {
-    console.log('Статус заказа был изменен на Доставлен или Отменён.');
-    // Получаем информацию о курьере, назначенном на этот заказ
-    const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
-    db.get(queryGetCourier, [orderId], (err, row) => {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-        return;
-      }
+      console.log('Изменения в таблице Orders были успешно внесены.');
+      // Проверка, было ли изменение статуса заказа на "Доставлен" или "Отменён"
+      if (status === 3 || status === 4) {
+        console.log('Статус заказа был изменен на Доставлен или Отменён.');
+        // Получаем информацию о курьере, назначенном на этот заказ
+        const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
+        db.get(queryGetCourier, [orderId], (err, row) => {
+          if (err) {
+            console.error(err);
+            res.status(500).json({ error: err.message });
+            return;
+          }
 
-      // Если курьер был назначен на этот заказ, освободить его
-      const assignedCourierId = row.courier_id;
-      console.log('ID назначенного курьера:', assignedCourierId);
-      if (assignedCourierId !== null) {
-        console.log('Курьер был назначен на этот заказ.');
-        // Обновляем информацию о курьере
-        updateCourier(null, assignedCourierId, () => {
-        console.log('Информация о курьере успешно обновлена.');
-        // Назначаем курьера на другой заказ
-        assignCourierToAnotherOrder(orderId, assignedCourierId); // Передаем assignedCourierId в качестве второго аргумента
-      });
+          // Если курьер был назначен на этот заказ, освободить его
+          const assignedCourierId = row.courier_id;
+          console.log('ID назначенного курьера:', assignedCourierId);
+          if (assignedCourierId !== null) {
+            console.log('Курьер был назначен на этот заказ.');
+            // Обновляем информацию о курьере
+            updateCourier(null, assignedCourierId, () => {
+              console.log('Информация о курьере успешно обновлена.');
+              // Назначаем курьера на другой заказ
+              assignCourierToAnotherOrder(orderId, assignedCourierId); // Передаем assignedCourierId в качестве второго аргумента
+            });
+          } else {
+            console.log('Курьер не был назначен на этот заказ.');
+            res.json({ changes: this.changes });
+          }
+        });
       } else {
-        console.log('Курьер не был назначен на этот заказ.');
+        console.log('Статус заказа не был изменен на Доставлен или Отменён.');
         res.json({ changes: this.changes });
       }
-    });
-  } else {
-    console.log('Статус заказа не был изменен на Доставлен или Отменён.');
-    res.json({ changes: this.changes });
-  }
-} else {
-  console.log('Изменения в таблице Orders не были внесены.');
-  res.status(500).json({ error: 'No changes made' });
-}
+    } else {
+      console.log('Изменения в таблице Orders не были внесены.');
+      res.status(500).json({ error: 'No changes made' });
+    }
   });
 });
 
@@ -2006,7 +2006,8 @@ app.put('/couriers/:id/rejectOrder/:orderId', (req, res) => {
   const updateCooldownQuery = `
     UPDATE Couriers
     SET cooldown_to_order = ?,
-        order_number = null
+        order_number = null,
+        offered_order = 0,
     WHERE courier_id = ?
   `;
 
