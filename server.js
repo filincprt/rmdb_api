@@ -1772,7 +1772,7 @@ app.put('/orders/:id/cancel', (req, res) => {
         const assignedCourierId = row.courier_id;
         if (assignedCourierId !== null) {
           // Обновляем информацию о курьере
-          updateCourier(null, assignedCourierId, () => {
+          updateCourierCan(null, assignedCourierId, () => {
             console.log('Информация о курьере успешно обновлена.');
             res.json({ success: true, message: 'Заказ успешно отменен' });
           });
@@ -1789,7 +1789,7 @@ app.put('/orders/:id/cancel', (req, res) => {
 });
 
 // Функция обновления информации о курьере
-const updateCourier = (orderNumber, courierId, callback) => {
+const updateCourierCan = (orderNumber, courierId, callback) => {
   console.log('Обновление информации о курьере...');
   const queryUpdateCourier = 'UPDATE Couriers SET order_number = NULL WHERE courier_id = ?';
   db.run(queryUpdateCourier, [courierId], function (err) {
