@@ -1616,17 +1616,28 @@ app.post('/orders', (req, res) => {
 
             let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
             const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
-            addOrder(nextOrderNumber, null); // Вызываем функцию добавления заказа с присваиванием курьера null
+            const qrSuccess = generateRandomString(40); // Генерируем рандомную строку длиной 40 символов
+            addOrder(nextOrderNumber, null, qrSuccess); // Вызываем функцию добавления заказа с присваиванием курьера null и сгенерированной строкой
         });
     };
 
+    // Генерация рандомной строки заданной длины
+    const generateRandomString = (length) => {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return result;
+    };
+
     // Добавление заказа в таблицу Orders
-    const addOrder = (orderNumber, courierId) => {
+    const addOrder = (orderNumber, courierId, qrSuccess) => {
         const status_id = 1; // Присваиваем значение 1 переменной status_id
         const created_time = new Date(Date.now()).toISOString(); // Текущее время +5 часов
 
-        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-        db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment, created_time], function (err) {
+        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time, qr_success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment, created_time, qrSuccess], function (err) {
             if (err) {
                 res.status(500).json({ error: err.message });
                 return;
@@ -1663,7 +1674,6 @@ app.post('/orders', (req, res) => {
             res.status(400).json({ error: error });
         });
 });
-
 
 
 // Редактирование данных в таблице Orders
