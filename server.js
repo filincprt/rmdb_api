@@ -1744,64 +1744,42 @@ app.put('/orders/:id/cancel', (req, res) => {
   const orderId = req.params.id;
   const { reason_of_refusal } = req.body;
 
-  // Обновление данных в таблице Orders
-  const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=NULL, reason_of_refusal=? WHERE id=?';
-
-  // Параметры для обновления
-  const params = [4, reason_of_refusal, orderId]; // Устанавливаем статус "Отменен" (id = 4), очищаем courier_id и устанавливаем причину отказа
-
-  db.run(queryOrder, params, function (err) {
+  // Обновление данных в таблице Couriers
+  const queryUpdateCourier = 'UPDATE Couriers SET order_number = NULL WHERE courier_id IN (SELECT courier_id FROM Orders WHERE id=?)';
+  
+  db.run(queryUpdateCourier, [orderId], function (err) {
     if (err) {
-      console.error(err);
+      console.error('Ошибка при обновлении информации о курьере:', err);
       res.status(500).json({ error: err.message });
       return;
     }
 
-    if (this.changes > 0) {
-      console.log('Изменения в таблице Orders были успешно внесены.');
-      // Получаем информацию о курьере, назначенном на этот заказ
-      const queryGetCourier = 'SELECT courier_id FROM Orders WHERE id=?';
-      db.get(queryGetCourier, [orderId], (err, row) => {
-        if (err) {
-          console.error(err);
-          res.status(500).json({ error: err.message });
-          return;
-        }
+    console.log('Информация о курьере успешно обновлена.');
 
-        // Если курьер был назначен на этот заказ, освободить его
-        const assignedCourierId = row.courier_id;
-        if (assignedCourierId !== null) {
-          // Обновляем информацию о курьере
-          updateCourierCan(null, assignedCourierId, () => {
-            console.log('Информация о курьере успешно обновлена.');
-            res.json({ success: true, message: 'Заказ успешно отменен' });
-          });
-        } else {
-          console.log('Курьер не был назначен на этот заказ.');
-          res.json({ success: true, message: 'Заказ успешно отменен' });
-        }
-      });
-    } else {
-      console.log('Изменения в таблице Orders не были внесены.');
-      res.status(500).json({ error: 'No changes made' });
-    }
+    // Обновление данных в таблице Orders
+    const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=NULL, reason_of_refusal=? WHERE id=?';
+
+    // Параметры для обновления
+    const params = [4, reason_of_refusal, orderId]; // Устанавливаем статус "Отменен" (id = 4), очищаем courier_id и устанавливаем причину отказа
+
+    db.run(queryOrder, params, function (err) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+        return;
+      }
+
+      if (this.changes > 0) {
+        console.log('Изменения в таблице Orders были успешно внесены.');
+        res.json({ success: true, message: 'Заказ успешно отменен' });
+      } else {
+        console.log('Изменения в таблице Orders не были внесены.');
+        res.status(500).json({ error: 'No changes made' });
+      }
+    });
   });
 });
 
-// Функция обновления информации о курьере
-const updateCourierCan = (orderNumber, courierId, callback) => {
-  console.log('Обновление информации о курьере...');
-  const queryUpdateCourier = 'UPDATE Couriers SET order_number = NULL WHERE courier_id = ?';
-  db.run(queryUpdateCourier, [courierId], function (err) {
-    if (err) {
-      console.error('Ошибка при обновлении информации о курьере:', err);
-      callback(err); // Вызываем обратный вызов с ошибкой
-    } else {
-      console.log('Информация о курьере успешно обновлена.');
-      callback(null); // Вызываем обратный вызов без ошибки
-    }
-  });
-};
 
 
 
