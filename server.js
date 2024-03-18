@@ -1742,12 +1742,13 @@ const updateCourier = (orderNumber, courierId, callback) => {
 // Новый метод для отмены заказа текущего курьера
 app.put('/orders/:id/cancel', (req, res) => {
   const orderId = req.params.id;
+  const courierId = req.body.courier_id; // Получаем courier_id из тела запроса
   const { reason_of_refusal } = req.body;
 
   // Обновление данных в таблице Couriers
-  const queryUpdateCourier = 'UPDATE Couriers SET order_number = NULL WHERE courier_id IN (SELECT courier_id FROM Orders WHERE id=?)';
-  
-  db.run(queryUpdateCourier, [orderId], function (err) {
+  const queryUpdateCourier = 'UPDATE Couriers SET order_number = NULL WHERE courier_id=?';
+
+  db.run(queryUpdateCourier, [courierId], function (err) {
     if (err) {
       console.error('Ошибка при обновлении информации о курьере:', err);
       res.status(500).json({ error: err.message });
