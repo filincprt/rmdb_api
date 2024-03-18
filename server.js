@@ -1758,7 +1758,7 @@ app.put('/orders/:id/cancel', (req, res) => {
     console.log('Информация о курьере успешно обновлена.');
 
     // Обновление данных в таблице Orders
-    const queryOrder = 'UPDATE Orders SET status_id=?, courier_id=NULL, reason_of_refusal=? WHERE id=?';
+    const queryOrder = 'UPDATE Orders SET status_id=?, reason_of_refusal=? WHERE id=?';
 
     // Параметры для обновления
     const params = [4, reason_of_refusal, orderId]; // Устанавливаем статус "Отменен" (id = 4), очищаем courier_id и устанавливаем причину отказа
