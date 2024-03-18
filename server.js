@@ -1804,6 +1804,7 @@ const updateCourier = (orderNumber, courierId, callback) => {
 };
 
 
+
 // Удаление данных из таблицы Orders по order_number
 app.delete('/orders/:order_number', (req, res) => {
   const orderNumber = req.params.order_number;
