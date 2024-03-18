@@ -1706,8 +1706,6 @@ app.put('/orders/:id', (req, res) => {
             // Обновляем информацию о курьере
             updateCourier(null, assignedCourierId, () => {
               console.log('Информация о курьере успешно обновлена.');
-              // Назначаем курьера на другой заказ
-              assignCourierToAnotherOrder(orderId, assignedCourierId); // Передаем assignedCourierId в качестве второго аргумента
             });
           } else {
             console.log('Курьер не был назначен на этот заказ.');
@@ -1740,90 +1738,6 @@ const updateCourier = (orderNumber, courierId, callback) => {
   });
 };
 
-const assignCourierToAnotherOrder = (currentOrderId, courierId) => {
-    // Получаем информацию о текущем курьере
-    const queryCourier = 'SELECT * FROM Couriers WHERE courier_id = ?';
-    db.get(queryCourier, [courierId], (err, courier) => {
-        if (err) {
-            console.error(err);
-            return;
-        }
-
-        // Если курьер не найден
-        if (!courier) {
-            console.log(`Курьер с ID ${courierId} не найден.`);
-            return;
-        }
-
-        // Получаем информацию о предыдущем курьере
-        const queryPrevCourier = 'SELECT * FROM Orders WHERE id = ?';
-        db.get(queryPrevCourier, [currentOrderId], (err, order) => {
-            if (err) {
-                console.error(err);
-                return;
-            }
-
-            // Если предыдущий курьер найден
-            if (order && order.courier_id !== null) {
-                const prevCourierId = order.courier_id;
-                // Удаляем order_number у предыдущего курьера
-                updateCourier(null, prevCourierId, (err) => {
-                    if (!err) {
-                        console.log(`Предыдущему курьеру ${prevCourierId} удален order_number.`);
-                    }
-                });
-            }
-
-            // Поиск ближайшего свободного заказа
-            const queryNearestOrder = `
-                SELECT id, order_number FROM Orders
-                WHERE courier_id IS NULL
-                ORDER BY id ASC
-                LIMIT 1
-            `;
-            db.get(queryNearestOrder, [], (err, nearestOrder) => {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-
-                // Если ближайший заказ найден
-                if (nearestOrder) {
-                    const nearestOrderId = nearestOrder.id;
-                    const nearestOrderNumber = nearestOrder.order_number;
-                    // Назначаем ближайший заказ текущему курьеру
-                    updateOrdersAndCourier(nearestOrderId, courierId, nearestOrderNumber, (err) => {
-                        if (!err) {
-                            console.log(`Курьеру ${courierId} назначен ближайший заказ ${nearestOrderNumber}`);
-                        }
-                    });
-                } else {
-                    console.log('Нет доступных заказов для назначения.');
-                }
-            });
-        });
-    });
-};
-
-const updateOrdersAndCourier = (orderId, courierId, orderNumber, callback) => {
-    // Обновляем информацию о курьере в заказе
-    const queryUpdateOrder = 'UPDATE Orders SET courier_id=?, order_number=? WHERE id=?';
-    db.run(queryUpdateOrder, [courierId, orderNumber, orderId], function (err) {
-        if (err) {
-            console.error('Ошибка при обновлении информации о заказе:', err);
-            callback(err); // Вызываем обратный вызов с ошибкой
-        } else {
-            console.log('Информация о заказе успешно обновлена.');
-            // Обновляем информацию о курьере
-            updateCourier(orderNumber, courierId, (err) => {
-                if (!err) {
-                    console.log('Информация о курьере успешно обновлена.');
-                    callback(null); // Вызываем обратный вызов без ошибки
-                }
-            });
-        }
-    });
-};
 
 // Удаление данных из таблицы Orders по order_number
 app.delete('/orders/:order_number', (req, res) => {
