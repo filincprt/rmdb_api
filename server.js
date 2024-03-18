@@ -1791,6 +1791,46 @@ app.put('/orders/:id/cancel', (req, res) => {
   });
 });
 
+// Метод для обработки значения qr_value
+app.put('/orders/:id/confirm_delivery', (req, res) => {
+    const orderId = req.params.id;
+    const { qr_value, courier_id } = req.body;
+
+    // Проверяем совпадение значения qr_value и qr_success в заказе
+    const queryCheckQRValue = 'SELECT qr_success FROM Orders WHERE id = ?';
+    db.get(queryCheckQRValue, [orderId], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        const qrSuccess = row.qr_success;
+
+        if (qr_value === qrSuccess) {
+            // Если значения совпадают, меняем статус заказа на "Доставлен"
+            const queryUpdateOrder = 'UPDATE Orders SET status_id = 3, courier_id = NULL WHERE id = ?';
+            db.run(queryUpdateOrder, [orderId], function (err) {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+
+                // Очищаем поле order_number в таблице Couriers
+                const queryClearOrderNumber = 'UPDATE Couriers SET order_number = NULL WHERE courier_id = ?';
+                db.run(queryClearOrderNumber, [courier_id], function (err) {
+                    if (err) {
+                        res.status(500).json({ error: err.message });
+                        return;
+                    }
+
+                    res.json({ success: true, message: 'Заказ успешно подтвержден и доставлен' });
+                });
+            });
+        } else {
+            res.status(400).json({ error: 'Неверное значение QR-кода' });
+        }
+    });
+});
 
 
 
