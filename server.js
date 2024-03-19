@@ -1834,6 +1834,33 @@ app.put('/orders/:id/confirm_delivery', (req, res) => {
     });
 });
 
+// PUT метод для изменения статуса заказа на "В пути"
+app.put('/orders/:id/deliver', (req, res) => {
+  const orderId = req.params.id;
+  const newStatus = 2; // ID статуса "В пути"
+
+  // Обновление данных в таблице Orders
+  const queryOrder = 'UPDATE Orders SET status_id=? WHERE id=?';
+
+  // Параметры для обновления
+  const params = [newStatus, orderId];
+
+  db.run(queryOrder, params, function (err) {
+    if (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    if (this.changes > 0) {
+      console.log('Изменения в таблице Orders были успешно внесены.');
+      res.json({ success: true, message: 'Статус заказа успешно изменен на "В пути"' });
+    } else {
+      console.log('Изменения в таблице Orders не были внесены.');
+      res.status(500).json({ error: 'No changes made' });
+    }
+  });
+});
 
 
 // Удаление данных из таблицы Orders по order_number
