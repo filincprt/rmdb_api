@@ -1828,17 +1828,17 @@ app.put('/orders/:id/confirm_delivery', (req, res) => {
 
                 // Очищаем поле order_number в таблице Couriers
                 const queryClearOrderNumber = 'UPDATE Couriers SET order_number = NULL WHERE courier_id = ?';
-                db.run(queryClearOrderNumber, [courier_id], function (err) {
-                    if (err) {
-                        console.error("Error occurred while clearing order number for courier:", err.message);
-                        res.status(500).json({ error: err.message });
-                        return;
-                    }
-
-                    console.log("Order number successfully cleared for courier ID:", courier_id);
-
-                    res.json({ success: true, message: 'Заказ успешно подтвержден и доставлен' });
-                });
+                   db.run(queryClearOrderNumber, [courierId], function (err) {
+                       if (err) {
+                           console.error("Error occurred while clearing order number for courier:", err.message);
+                           res.status(500).json({ error: err.message });
+                           return;
+                       }
+                   
+                       console.log("Order number successfully cleared for courier ID:", courierId);
+                   
+                       res.json({ success: true, message: 'Заказ успешно подтвержден и доставлен' });
+                   });
             });
         } else {
             console.log("QR code value does not match the success value for order ID:", orderId);
