@@ -1794,15 +1794,17 @@ app.put('/orders/:id/cancel', (req, res) => {
   });
 });
 
-// Метод для обработки значения qr_value
 app.put('/orders/:id/confirm_delivery', (req, res) => {
     const orderId = req.params.id;
     const { qr_value, courier_id } = req.body;
+
+    console.log("Received request to confirm delivery for order ID:", orderId);
 
     // Проверяем совпадение значения qr_value и qr_success в заказе
     const queryCheckQRValue = 'SELECT qr_success FROM Orders WHERE id = ?';
     db.get(queryCheckQRValue, [orderId], (err, row) => {
         if (err) {
+            console.error("Error occurred while checking QR value:", err.message);
             res.status(500).json({ error: err.message });
             return;
         }
@@ -1810,26 +1812,35 @@ app.put('/orders/:id/confirm_delivery', (req, res) => {
         const qrSuccess = row.qr_success;
 
         if (qr_value === qrSuccess) {
+            console.log("QR code value matches the success value for order ID:", orderId);
+
             // Если значения совпадают, меняем статус заказа на "Доставлен"
             const queryUpdateOrder = 'UPDATE Orders SET status_id = 3, courier_id = NULL WHERE id = ?';
             db.run(queryUpdateOrder, [orderId], function (err) {
                 if (err) {
+                    console.error("Error occurred while updating order status:", err.message);
                     res.status(500).json({ error: err.message });
                     return;
                 }
+
+                console.log("Order status successfully updated for order ID:", orderId);
 
                 // Очищаем поле order_number в таблице Couriers
                 const queryClearOrderNumber = 'UPDATE Couriers SET order_number = NULL WHERE courier_id = ?';
                 db.run(queryClearOrderNumber, [courier_id], function (err) {
                     if (err) {
+                        console.error("Error occurred while clearing order number for courier:", err.message);
                         res.status(500).json({ error: err.message });
                         return;
                     }
+
+                    console.log("Order number successfully cleared for courier ID:", courier_id);
 
                     res.json({ success: true, message: 'Заказ успешно подтвержден и доставлен' });
                 });
             });
         } else {
+            console.log("QR code value does not match the success value for order ID:", orderId);
             res.status(400).json({ error: 'Неверное значение QR-кода' });
         }
     });
