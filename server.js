@@ -1540,6 +1540,7 @@ app.get('/orders/:id', (req, res) => {
                     Couriers.first_name AS courier_first_name,
                     Couriers.last_name AS courier_last_name,
                     Orders.address,
+                    Orders.qr_success,
                     Orders.reason_of_refusal,
                     Couriers.courier_id,
                     Status.name AS status
@@ -1558,7 +1559,6 @@ app.get('/orders/:id', (req, res) => {
                        Order_Lines.quantity,
                        Products.price,
                        Products.barcode,
-                       Product.qr_success,
                        Products.image_resource,
                        Order_Lines.product_id as productId
                 FROM Order_Lines
