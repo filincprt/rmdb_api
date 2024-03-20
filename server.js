@@ -2003,10 +2003,10 @@ app.delete('/orders/:orderId/items/:itemId', (req, res) => {
 
 
 // Замена товара в заказе
-app.put('/orders/:orderId/items/:itemId/replace/:replacementId', (req, res) => {
+app.put('/orders/:orderId/items/:itemId/replace/:replacementBarcode', (req, res) => {
   const orderId = req.params.orderId;
   const itemId = req.params.itemId;
-  const replacementId = req.params.replacementId;
+  const replacementBarcode = req.params.replacementBarcode;
 
   // Проверка статуса заказа
   const queryCheckOrderStatus = 'SELECT status_id FROM Orders WHERE id=?';
@@ -2024,25 +2024,43 @@ app.put('/orders/:orderId/items/:itemId/replace/:replacementId', (req, res) => {
       return;
     }
 
-    // Обновляем товар в позиции заказа
-    const queryReplaceOrderItem = 'UPDATE Order_Lines SET product_id=? WHERE order_id=? AND product_id=?';
-    db.run(queryReplaceOrderItem, [replacementId, orderId, itemId], function (err) {
+    // Получаем идентификатор товара по штрихкоду
+    const queryGetProductIdByBarcode = 'SELECT id FROM Products WHERE barcode=?';
+    db.get(queryGetProductIdByBarcode, [replacementBarcode], (err, row) => {
       if (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
         return;
       }
-      
-      if (this.changes > 0) {
-        console.log('Товар в заказе был успешно заменен.');
-        res.json({ success: true });
-      } else {
-        console.log('Товар в заказе не был заменен.');
-        res.status(500).json({ error: 'Не удалось заменить товар в заказе.' });
+
+      if (!row) {
+        res.status(400).json({ error: 'Товар с указанным штрихкодом не найден.' });
+        return;
       }
+
+      const replacementId = row.id;
+
+      // Обновляем товар в позиции заказа
+      const queryReplaceOrderItem = 'UPDATE Order_Lines SET product_id=? WHERE order_id=? AND product_id=?';
+      db.run(queryReplaceOrderItem, [replacementId, orderId, itemId], function (err) {
+        if (err) {
+          console.error(err);
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        
+        if (this.changes > 0) {
+          console.log('Товар в заказе был успешно заменен.');
+          res.json({ success: true });
+        } else {
+          console.log('Товар в заказе не был заменен.');
+          res.status(500).json({ error: 'Не удалось заменить товар в заказе.' });
+        }
+      });
     });
   });
 });
+
 
 
 //отказ от заказа курьером
