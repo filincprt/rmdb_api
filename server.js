@@ -1558,6 +1558,7 @@ app.get('/orders/:id', (req, res) => {
                        Order_Lines.quantity,
                        Products.price,
                        Products.barcode,
+                       Product.qr_success,
                        Products.image_resource,
                        Order_Lines.product_id as productId
                 FROM Order_Lines
