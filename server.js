@@ -1557,6 +1557,7 @@ app.get('/orders/:id', (req, res) => {
         // Получаем детали товаров для данного заказа
         db.all(`SELECT Products.name AS product_name,
                        Order_Lines.quantity,
+                       Products.id,
                        Products.price,
                        Products.barcode,
                        Products.image_resource,
