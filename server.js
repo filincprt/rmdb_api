@@ -1796,7 +1796,9 @@ app.put('/orders/:id/cancel', (req, res) => {
 
 app.put('/orders/:id/confirm_delivery', (req, res) => {
     const orderId = req.params.id;
-    const { qr_value, courier_id } = req.body;
+    const qr_value = req.body;
+    const courier_id = req.body;
+    //const { qr_value, courier_id } = req.body;
 
     console.log("Received request to confirm delivery for order ID:", orderId);
 
