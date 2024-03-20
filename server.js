@@ -1816,7 +1816,7 @@ app.put('/orders/:id/confirm_delivery', (req, res) => {
             console.log("QR code value matches the success value for order ID:", orderId);
 
             // Если значения совпадают, меняем статус заказа на "Доставлен"
-            const queryUpdateOrder = 'UPDATE Orders SET status_id = 3, courier_id = NULL WHERE id = ?';
+            const queryUpdateOrder = 'UPDATE Orders SET status_id = 3 WHERE id = ?';
             db.run(queryUpdateOrder, [orderId], function (err) {
                 if (err) {
                     console.error("Error occurred while updating order status:", err.message);
