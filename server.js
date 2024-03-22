@@ -1977,7 +1977,7 @@ app.delete('/orders/:orderId/items/:itemId', (req, res) => {
 
     const orderStatusId = row.status_id;
     // Проверяем, что статус заказа позволяет изменять позиции
-    if (orderStatusId == '1' || orderStatusId == '5') {
+   if (orderStatusId != '1' && orderStatusId != '5') {
       res.status(400).json({ error: 'Невозможно удалить позицию из заказа. Статус заказа не позволяет это сделать.' });
       return;
     }
