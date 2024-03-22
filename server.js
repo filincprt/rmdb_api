@@ -1963,43 +1963,60 @@ app.put('/orders/:orderId/items/:itemId', (req, res) => {
 
 // Удаление позиции из заказа
 app.delete('/orders/:orderId/items/:itemId', (req, res) => {
-  const orderId = req.params.orderId;
-  const itemId = req.params.itemId;
+    const orderId = req.params.orderId;
+    const itemId = req.params.itemId;
 
-  // Проверка статуса заказа
-  const queryCheckOrderStatus = 'SELECT status_id FROM Orders WHERE id=?';
-  db.get(queryCheckOrderStatus, [orderId], (err, row) => {
-    if (err) {
-      console.error(err);
-      res.status(500).json({ error: err.message });
-      return;
-    }
+    // Проверка статуса заказа
+    const queryCheckOrderStatus = 'SELECT status_id FROM Orders WHERE id=?';
+    db.get(queryCheckOrderStatus, [orderId], (err, row) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: err.message });
+            return;
+        }
 
-    const orderStatusId = row.status_id;
-    // Проверяем, что статус заказа позволяет изменять позиции
-   if (orderStatusId != '1' && orderStatusId != '5') {
-      res.status(400).json({ error: 'Невозможно удалить позицию из заказа. Статус заказа не позволяет это сделать.' });
-      return;
-    }
+        const orderStatusId = row.status_id;
+        // Проверяем, что статус заказа позволяет изменять позиции
+        if (orderStatusId != '1' && orderStatusId != '5') {
+            res.status(400).json({ error: 'Невозможно удалить позицию из заказа. Статус заказа не позволяет это сделать.' });
+            return;
+        }
 
-    // Удаляем позицию из заказа
-    const queryDeleteOrderItem = 'DELETE FROM Order_Lines WHERE order_id=? AND product_id=?';
-    db.run(queryDeleteOrderItem, [orderId, itemId], function (err) {
-      if (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-        return;
-      }
-      
-      if (this.changes > 0) {
-        console.log('Позиция была успешно удалена из заказа.');
-        res.json({ success: true });
-      } else {
-        console.log('Позиция не была удалена из заказа.');
-        res.status(500).json({ error: 'Не удалось удалить позицию из заказа.' });
-      }
+        // Проверка, является ли товар последним в заказе
+        const queryCheckIfLastItem = 'SELECT COUNT(*) AS item_count FROM Order_Lines WHERE order_id=?';
+        db.get(queryCheckIfLastItem, [orderId], (err, row) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            const itemCount = row.item_count;
+            // Проверяем, является ли товар последним в заказе
+            if (itemCount <= 1) {
+                res.status(400).json({ error: 'Невозможно удалить последний товар из заказа.' });
+                return;
+            }
+
+            // Удаляем позицию из заказа
+            const queryDeleteOrderItem = 'DELETE FROM Order_Lines WHERE order_id=? AND product_id=?';
+            db.run(queryDeleteOrderItem, [orderId, itemId], function (err) {
+                if (err) {
+                    console.error(err);
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                
+                if (this.changes > 0) {
+                    console.log('Позиция была успешно удалена из заказа.');
+                    res.json({ success: true });
+                } else {
+                    console.log('Позиция не была удалена из заказа.');
+                    res.status(500).json({ error: 'Не удалось удалить позицию из заказа.' });
+                }
+            });
+        });
     });
-  });
 });
 
 
