@@ -2317,11 +2317,10 @@ app.delete('/products/decrement/:barcode', (req, res) => {
 
 //------------------------------AUTOFUNCTION----------------------------------------
 
-// Функция для проверки и назначения заказов свободным курьерам
 function checkAndAssignOrdersToCouriers() {
     const interval = setInterval(() => {
         // Запрос к базе данных для выбора свободных и активных курьеров
-     console.log('Выполняется поиск свободных курьеров и назначение им заказов...');
+        console.log('Выполняется поиск свободных курьеров и назначение им заказов...');
         const query = `
             SELECT courier_id, cooldown_to_order
             FROM Couriers
@@ -2350,46 +2349,47 @@ function checkAndAssignOrdersToCouriers() {
 
                     if (orders.length > 0) {
                         // Проходим по каждому свободному курьеру и назначаем заказы
-                        // Проходим по каждому свободному курьеру и назначаем заказы
-                      couriers.forEach(courier => {
-                          // Выбираем первый заказ из списка без курьера и назначаем его курьеру
-                          const order = orders.shift();
-                          if (order) {
-                              const orderId = order.id;
-                              const courierId = courier.courier_id;
-                      
-                              // Обновляем заказ, чтобы назначить его курьеру
-                              const assignOrderQuery = `
-                                  UPDATE Orders
-                                  SET courier_id = ?
-                                  WHERE id = ?
-                              `;
-                      
-                              db.run(assignOrderQuery, [courierId, orderId], (err) => {
-                                  if (err) {
-                                      console.error(err.message);
-                                      return;
-                                  }
-                      
-                                  // Обновляем информацию о заказе в таблице Couriers
-                                  const updateCourierQuery = `
-                                      UPDATE Couriers
-                                      SET order_number = ?
-                                      WHERE courier_id = ?
-                                  `;
-                      
-                                  db.run(updateCourierQuery, [orderId, courierId], (err) => {
-                                      if (err) {
-                                          console.error(err.message);
-                                          return;
-                                      }
-                                  });
-                              });
-                          } else {
-                              console.log('Нет заказов без назначенных курьеров.');
-                          }
-                      });
+                        couriers.forEach(courier => {
+                            // Проверяем, что статус курьера не является занятым
+                            if (![1, 2, 5].includes(courier.status_id)) {
+                                // Выбираем первый заказ из списка без курьера и назначаем его курьеру
+                                const order = orders.shift();
+                                if (order) {
+                                    const orderId = order.id;
+                                    const courierId = courier.courier_id;
 
+                                    // Обновляем заказ, чтобы назначить его курьеру
+                                    const assignOrderQuery = `
+                                        UPDATE Orders
+                                        SET courier_id = ?
+                                        WHERE id = ?
+                                    `;
+
+                                    db.run(assignOrderQuery, [courierId, orderId], (err) => {
+                                        if (err) {
+                                            console.error(err.message);
+                                            return;
+                                        }
+
+                                        // Обновляем информацию о заказе в таблице Couriers
+                                        const updateCourierQuery = `
+                                            UPDATE Couriers
+                                            SET order_number = ?
+                                            WHERE courier_id = ?
+                                        `;
+
+                                        db.run(updateCourierQuery, [orderId, courierId], (err) => {
+                                            if (err) {
+                                                console.error(err.message);
+                                                return;
+                                            }
+                                        });
+                                    });
+                                } else {
+                                    console.log('Нет заказов без назначенных курьеров.');
+                                }
+                            }
+                        });
                     }
                 });
             }
