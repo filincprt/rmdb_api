@@ -211,8 +211,8 @@ app.get('/user/orders/:id', (req, res) => {
 
     // Запрос к базе данных для получения всех заказов клиента (пользователя)
     db.all(`SELECT Orders.*, 
-                   Status.name AS status
-                   Orders.barcode,
+                   Status.name AS status,
+                   Orders.barcode
             FROM Orders
             LEFT JOIN Status ON Orders.status_id = Status.id
             WHERE Orders.user_id = ?`, [userId], (err, orders) => {
