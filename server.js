@@ -204,18 +204,15 @@ app.get('/users/:userId', (req, res) => {
     });
 });
 
-// Получение всех заказов, связанных с определенным клиентом
+
+// Получение всех заказов клиента (пользователя) по его ID
 app.get('/user/orders/:id', (req, res) => {
     const userId = req.params.id;
 
-    // Запрос к базе данных для получения всех заказов, связанных с клиентом
+    // Запрос к базе данных для получения всех заказов клиента (пользователя)
     db.all(`SELECT Orders.*, 
-                   Couriers.first_name AS courier_first_name,
-                   Couriers.last_name AS courier_last_name,
-                   Couriers.contact_number AS courier_contact_number,
                    Status.name AS status
             FROM Orders
-            JOIN Couriers ON Orders.courier_id = Couriers.courier_id
             LEFT JOIN Status ON Orders.status_id = Status.id
             WHERE Orders.user_id = ?`, [userId], (err, orders) => {
         if (err) {
@@ -243,6 +240,7 @@ app.get('/user/orders/:id', (req, res) => {
         res.json({ orders: orders });
     });
 });
+
 
 
 //--------------------------------------------
