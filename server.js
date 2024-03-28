@@ -204,6 +204,46 @@ app.get('/users/:userId', (req, res) => {
     });
 });
 
+// Получение всех заказов, связанных с определенным клиентом
+app.get('/user/orders/:id', (req, res) => {
+    const userId = req.params.id;
+
+    // Запрос к базе данных для получения всех заказов, связанных с клиентом
+    db.all(`SELECT Orders.*, 
+                   Couriers.first_name AS courier_first_name,
+                   Couriers.last_name AS courier_last_name,
+                   Couriers.contact_number AS courier_contact_number,
+                   Status.name AS status
+            FROM Orders
+            JOIN Couriers ON Orders.courier_id = Couriers.courier_id
+            LEFT JOIN Status ON Orders.status_id = Status.id
+            WHERE Orders.user_id = ?`, [userId], (err, orders) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        // Для каждого заказа получаем детали товаров
+        orders.forEach(order => {
+            db.all(`SELECT Products.name AS product_name,
+                           Order_Lines.quantity,
+                           Products.price,
+                           Order_Lines.product_id as productId
+                    FROM Order_Lines
+                    JOIN Products ON Order_Lines.product_id = Products.id
+                    WHERE Order_Lines.order_id = ?`, [order.id], (err, products) => {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                order.products = products;
+            });
+        });
+
+        res.json({ orders: orders });
+    });
+});
+
 
 //--------------------------------------------
 
