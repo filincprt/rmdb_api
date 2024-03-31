@@ -221,28 +221,36 @@ app.get('/user/orders/:id', (req, res) => {
             return;
         }
 
-        // Для каждого заказа получаем детали товаров
-        orders.forEach(order => {
-            db.all(`SELECT Products.name AS product_name,
-                           Order_Lines.quantity,
-                           Products.price,
-                           Order_Lines.product_id as productId
-                    FROM Order_Lines
-                    JOIN Products ON Order_Lines.product_id = Products.id
-                    WHERE Order_Lines.order_id = ?`, [order.id], (err, products) => {
-                if (err) {
-                    res.status(500).json({ error: err.message });
-                    return;
-                }
-                order.products = products;
+        // Создаем массив промисов для запросов деталей товаров каждого заказа
+        const promises = orders.map(order => {
+            return new Promise((resolve, reject) => {
+                db.all(`SELECT Products.name AS product_name,
+                               Order_Lines.quantity,
+                               Products.price,
+                               Order_Lines.product_id as productId
+                        FROM Order_Lines
+                        JOIN Products ON Order_Lines.product_id = Products.id
+                        WHERE Order_Lines.order_id = ?`, [order.id], (err, products) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    order.products = products;
+                    resolve();
+                });
             });
         });
 
-        res.json({ orders: orders });
+        // Дожидаемся выполнения всех промисов
+        Promise.all(promises)
+            .then(() => {
+                res.json({ orders: orders });
+            })
+            .catch(err => {
+                res.status(500).json({ error: err.message });
+            });
     });
 });
-
-
 
 
 //--------------------------------------------
