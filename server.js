@@ -2486,68 +2486,7 @@ cancelOrderAfterTwentyMinutes();
 
 //---------------------------------TEST----------------------------------------
 
-// Функция для сохранения изображения из base64 строки
-function saveImageFromBase64(base64String, fileName) {
-    const imagePath = path.join(__dirname, 'images', fileName);
-    const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
-    fs.writeFileSync(imagePath, base64Data, { encoding: 'base64' });
-    return imagePath;
-}
 
-
-// Получение всех заказов клиента (пользователя) по его ID
-app.get('/test/orders/:id', (req, res) => {
-    const userId = req.params.id;
-
-    // Запрос к базе данных для получения всех заказов клиента (пользователя)
-    db.all(`SELECT Orders.*, 
-                   Status.name AS status,
-                   Orders.qr_success
-            FROM Orders
-            LEFT JOIN Status ON Orders.status_id = Status.id
-            WHERE Orders.user_id = ?`, [userId], (err, orders) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
-        // Создаем массив промисов для запросов деталей товаров каждого заказа
-        const promises = orders.map(order => {
-            return new Promise((resolve, reject) => {
-                db.all(`SELECT Products.name AS product_name,
-                               Order_Lines.quantity,
-                               Products.price,
-                               Products.image_resource,
-                               Order_Lines.product_id as productId
-                        FROM Order_Lines
-                        JOIN Products ON Order_Lines.product_id = Products.id
-                        WHERE Order_Lines.order_id = ?`, [order.id], (err, products) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    // Конвертируем изображения в base64 строки
-                    products.forEach(product => {
-                        if (product.image_resource) {
-                            product.image_resource = `data:image/png;base64,${product.image_resource}`; // Предположим, что изображение в формате PNG
-                        }
-                    });
-                    order.products = products;
-                    resolve();
-                });
-            });
-        });
-
-        // Дожидаемся выполнения всех промисов
-        Promise.all(promises)
-            .then(() => {
-                res.json({ orders: orders });
-            })
-            .catch(err => {
-                res.status(500).json({ error: err.message });
-            });
-    });
-});
 
 
 //---------------------------------------------------------------------------------
