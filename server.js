@@ -2526,12 +2526,10 @@ app.get('/test/orders/:id', (req, res) => {
                         reject(err);
                         return;
                     }
-                    // Заменяем base64 строку изображения на публичный URL
+                    // Конвертируем изображения в base64 строки
                     products.forEach(product => {
                         if (product.image_resource) {
-                            const fileName = `${product.productId}.png`; // Предположим, что изображение в формате PNG
-                            const imagePath = saveImageFromBase64(product.image_resource, fileName);
-                            product.image_resource = `https://rmdb-i5cl.onrender.com/images/${fileName}`; // Замените на ваш домен
+                            product.image_resource = `data:image/png;base64,${product.image_resource}`; // Предположим, что изображение в формате PNG
                         }
                     });
                     order.products = products;
