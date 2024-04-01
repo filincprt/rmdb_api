@@ -227,6 +227,7 @@ app.get('/user/orders/:id', (req, res) => {
                 db.all(`SELECT Products.name AS product_name,
                                Order_Lines.quantity,
                                Products.price,
+                               Products.image_resource,
                                Order_Lines.product_id as productId
                         FROM Order_Lines
                         JOIN Products ON Order_Lines.product_id = Products.id
