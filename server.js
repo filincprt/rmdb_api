@@ -212,6 +212,7 @@ app.get('/user/orders/:id', (req, res) => {
     // Запрос к базе данных для получения всех заказов клиента (пользователя)
     db.all(`SELECT Orders.*, 
                    Status.name AS status,
+                   Orders.reason_of_refusal,
                    Orders.qr_success
             FROM Orders
             LEFT JOIN Status ON Orders.status_id = Status.id
