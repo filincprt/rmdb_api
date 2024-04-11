@@ -42,43 +42,44 @@ function authenticateToken(req, res, next) {
 
 //----------------------------------------------------------------------------
 
-// Метод GET для получения текущего статуса тех. работ
-app.get('/technical_work_status', authenticateToken, (req, res) => {
+// Метод GET для получения текущего статуса технических работ
+app.get('/technical_work_status', (req, res) => {
     db.get('SELECT work_status FROM technical_work_status', (err, row) => {
         if (err) {
-            console.error('Ошибка при получении статуса тех. работ:', err);
-            return res.status(500).send('Ошибка при получении статуса тех. работ');
+            console.error('Ошибка при получении статуса технических работ:', err);
+            return res.status(500).send('Ошибка при получении статуса технических работ');
         }
         
         if (!row) {
-            return res.status(404).send('Статус тех. работ не найден');
+            return res.status(404).send('Статус технических работ не найден');
         }
 
         res.json({ work_status: row.work_status });
     });
 });
 
-// Метод PUT для обновления статуса работы
-app.put('/technical_work_status', authenticateToken, (req, res) => {
+// Метод PUT для обновления статуса технических работ
+app.put('/technical_work_status', (req, res) => {
     const { work_status } = req.body;
 
     if (work_status === undefined || (work_status !== 0 && work_status !== 1)) {
-        return res.status(400).send('Некорректное значение статуса тех. работ');
+        return res.status(400).send('Некорректное значение статуса технических работ');
     }
 
     db.run('UPDATE technical_work_status SET work_status = ?', [work_status], function(err) {
         if (err) {
-            console.error('Ошибка при обновлении статуса тех. работ:', err);
-            return res.status(500).send('Ошибка при обновлении статуса тех. работ');
+            console.error('Ошибка при обновлении статуса технических работ:', err);
+            return res.status(500).send('Ошибка при обновлении статуса технических работ');
         }
 
         if (this.changes === 0) {
-            return res.status(404).send('Статус тех. работ не найден');
+            return res.status(404).send('Статус технических работ не найден');
         }
 
-        res.send('Статус тех. работ успешно обновлен');
+        res.send('Статус технических работ успешно обновлен');
     });
 });
+
 
 
 //----------------------------------------------------------------------------
