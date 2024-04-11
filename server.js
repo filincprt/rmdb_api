@@ -42,6 +42,47 @@ function authenticateToken(req, res, next) {
 
 //----------------------------------------------------------------------------
 
+// Метод GET для получения текущего статуса тех. работ
+app.get('/technical_work_status', authenticateToken, (req, res) => {
+    db.get('SELECT work_status FROM technical_work_status', (err, row) => {
+        if (err) {
+            console.error('Ошибка при получении статуса тех. работ:', err);
+            return res.status(500).send('Ошибка при получении статуса тех. работ');
+        }
+        
+        if (!row) {
+            return res.status(404).send('Статус тех. работ не найден');
+        }
+
+        res.json({ work_status: row.work_status });
+    });
+});
+
+// Метод PUT для обновления статуса работы
+app.put('/technical_work_status', authenticateToken, (req, res) => {
+    const { work_status } = req.body;
+
+    if (work_status === undefined || (work_status !== 0 && work_status !== 1)) {
+        return res.status(400).send('Некорректное значение статуса тех. работ');
+    }
+
+    db.run('UPDATE technical_work_status SET work_status = ?', [work_status], function(err) {
+        if (err) {
+            console.error('Ошибка при обновлении статуса тех. работ:', err);
+            return res.status(500).send('Ошибка при обновлении статуса тех. работ');
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).send('Статус тех. работ не найден');
+        }
+
+        res.send('Статус тех. работ успешно обновлен');
+    });
+});
+
+
+//----------------------------------------------------------------------------
+
 // Заглушка для проверки пароля
 const checkPassword = (password) => {
     return password === 'Hlp3j95ff223';
