@@ -461,7 +461,7 @@ app.put('/users/:email', (req, res) => {
 
 
 // Обновление данных в таблице Users
-app.put('/users/:id', (req, res) => {
+app.put('/user/:id', (req, res) => {
   const { email, first_name, last_name, delivery_address } = req.body;
   const userId = req.params.id;
   const query = `
