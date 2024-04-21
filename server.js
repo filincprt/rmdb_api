@@ -1670,7 +1670,7 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-    const { user_id, products, delivery_time, address, user_comment } = req.body;
+    const { user_id, products, address, user_comment } = req.body;
 
     // Проверяем наличие товаров и достаточное количество на складе для каждого продукта
     const checkProductAvailability = () => {
@@ -1713,7 +1713,12 @@ app.post('/orders', (req, res) => {
             let lastOrderNumber = row.last_order_number || 0; // Если таблица пустая, начнем с 0
             const nextOrderNumber = ('0' + (lastOrderNumber + 1)).slice(-8); // Форматирование номера заказа
             const qrSuccess = generateRandomString(40); // Генерируем рандомную строку длиной 40 символов
-            addOrder(nextOrderNumber, null, qrSuccess); // Вызываем функцию добавления заказа с присваиванием курьера null и сгенерированной строкой
+
+            // Вычисляем время доставки с добавлением 5 часов
+            const deliveryTime = new Date();
+            deliveryTime.setHours(deliveryTime.getHours() + 5);
+
+            addOrder(nextOrderNumber, null, qrSuccess, deliveryTime); // Вызываем функцию добавления заказа с присваиванием курьера null и сгенерированной строкой
         });
     };
 
@@ -1728,12 +1733,12 @@ app.post('/orders', (req, res) => {
     };
 
     // Добавление заказа в таблицу Orders
-    const addOrder = (orderNumber, courierId, qrSuccess) => {
+    const addOrder = (orderNumber, courierId, qrSuccess, deliveryTime) => {
         const status_id = 1; // Присваиваем значение 1 переменной status_id
-        const created_time = new Date(Date.now()).toISOString(); // Текущее время +5 часов
+        const created_time = new Date(Date.now()).toISOString(); // Текущее время
 
         const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time, qr_success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        db.run(queryOrder, [user_id, orderNumber, delivery_time, status_id, address, courierId, user_comment, created_time, qrSuccess], function (err) {
+        db.run(queryOrder, [user_id, orderNumber, deliveryTime.toISOString(), status_id, address, courierId, user_comment, created_time, qrSuccess], function (err) {
             if (err) {
                 res.status(500).json({ error: err.message });
                 return;
