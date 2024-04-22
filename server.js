@@ -2252,9 +2252,20 @@ app.put('/couriers/:courierId/acceptOrder/:orderId', (req, res) => {
 
 //--------------------------------Feedback--------------------------
 
-// GET запрос для получения всех отзывов
+// GET запрос для получения всех отзывов с заменой product_id на название продукта и client_id на инициалы клиента
 app.get('/feedback', (req, res) => {
-  const query = "SELECT * FROM Feedback;";
+  const query = `
+    SELECT 
+      Feedback.id,
+      Products.name AS product_name,
+      Feedback.text,
+      Feedback.rating,
+      (SUBSTR(Users.first_name, 1, 1) || '***** ' || SUBSTR(Users.last_name, 1, 1) || '*****') AS client_initials
+    FROM Feedback
+    JOIN Products ON Feedback.product_id = Products.id
+    JOIN Users ON Feedback.client_id = Users.id;
+  `;
+  
   db.all(query, [], (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
