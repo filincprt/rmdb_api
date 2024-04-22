@@ -1213,7 +1213,7 @@ app.delete('/products/:id', async (req, res) => {
     const ordersWithProduct = await db.get('SELECT * FROM Orders JOIN Order_Lines ON Orders.id = Order_Lines.order_id WHERE Order_Lines.product_id = ? AND Orders.status_id IN (1, 2, 5)', [productId]);
 
     // Если продукт находится в заказе со статусом "Новый", "В пути" или "В сборке", возвращаем сообщение об ошибке
-    if (ordersWithProduct) {
+    if (!ordersWithProduct) {
         return res.status(400).json({ error: 'Нельзя удалить продукт, находящийся в заказе со статусом "Новый", "В пути" или "В сборке".' });
     }
 
