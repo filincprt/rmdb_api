@@ -2252,23 +2252,11 @@ app.put('/couriers/:courierId/acceptOrder/:orderId', (req, res) => {
 
 //--------------------------------Feedback--------------------------
 
-// GET запрос для получения всех отзывов с заменой product_id на название продукта и client_id на инициалы клиента
+// GET запрос для получения всех отзывов
 app.get('/feedback', (req, res) => {
-  const query = `
-    SELECT 
-      f.id,
-      p.name AS product_name,
-      f.text,
-      f.rating,
-      SUBSTR(u.first_name, 1, 1) || '**** ' || SUBSTR(u.last_name, 1, 1) || '********' AS client_initials
-    FROM Feedback f
-    INNER JOIN Products p ON f.product_id = p.id
-    INNER JOIN Users u ON f.client_id = u.id;
-  `;
-  
+  const query = "SELECT * FROM Feedback;";
   db.all(query, [], (err, rows) => {
     if (err) {
-      console.error('Error executing feedback query:', err);
       res.status(500).json({ error: err.message });
     } else {
       res.status(200).json(rows);
