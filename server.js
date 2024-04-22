@@ -2274,30 +2274,21 @@ app.get('/feedback', (req, res) => {
 });
 
 
-app.get('/feedback/:product_id', (req, res) => {
-  const productId = req.params.product_id;
+app.get('/product/:productId/feedback', (req, res) => {
+    const productId = req.params.productId;
 
-  const query = `
-    SELECT 
-      Feedback.id,
-      Products.name AS product_name,
-      Feedback.text,
-      Feedback.rating,
-      Users.first_name,
-      Users.last_name
-    FROM Feedback
-    LEFT JOIN Products ON Feedback.product_id = Products.id
-    LEFT JOIN Users ON Feedback.client_id = Users.id
-    WHERE Feedback.product_id = ?;
-  `;
+    // Запрос к базе данных для получения отзывов для указанного товара по его ID
+    db.all(`SELECT f.id, p.name AS product_name, f.text, f.rating, u.first_name, u.last_name
+            FROM Feedback f
+            JOIN Products p ON f.product_id = p.id
+            JOIN Users u ON f.client_id = u.id
+            WHERE p.id = ?`, [productId], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Ошибка при запросе к базе данных' });
+        }
 
-  db.all(query, [productId], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-    } else {
-      res.status(200).json(rows);
-    }
-  });
+        res.json(rows); // Отправляем полученные отзывы в формате JSON
+    });
 });
 
 
