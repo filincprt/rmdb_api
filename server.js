@@ -2252,24 +2252,13 @@ app.put('/couriers/:courierId/acceptOrder/:orderId', (req, res) => {
 
 //--------------------------------Feedback--------------------------
 
-// GET запрос для получения всех отзывов с именем продукта и именем клиента
 app.get('/feedback', (req, res) => {
   const query = `
-    SELECT 
-      Feedback.id,
-      Products.name AS product_name,
-      Feedback.text,
-      Feedback.rating,
-      Users.first_name,
-      Users.last_name
-    FROM 
-      Feedback
-    INNER JOIN 
-      Products ON Feedback.product_id = Products.id
-    INNER JOIN 
-      Users ON Feedback.client_id = Users.id;
+    SELECT f.id, p.name AS product_name, f.text, f.rating, u.first_name, u.last_name
+    FROM Feedback f
+    INNER JOIN Products p ON f.product_id = p.id
+    INNER JOIN Users u ON f.client_id = u.id;
   `;
-  
   db.all(query, [], (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
@@ -2278,6 +2267,7 @@ app.get('/feedback', (req, res) => {
     }
   });
 });
+
 
 
 // GET запрос для просмотра отзывов на конкретный товар с заменой product_id на название продукта и client_id на инициалы клиента
