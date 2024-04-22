@@ -2252,9 +2252,20 @@ app.put('/couriers/:courierId/acceptOrder/:orderId', (req, res) => {
 
 //--------------------------------Feedback--------------------------
 
-// GET запрос для получения всех отзывов
+// GET запрос для получения всех отзывов с заменой product_id на название продукта и client_id на инициалы клиента
 app.get('/feedback', (req, res) => {
-  const query = "SELECT * FROM Feedback;";
+  const query = `
+    SELECT 
+      f.id,
+      p.name AS product_name,
+      f.text,
+      f.rating,
+      SUBSTR(u.first_name, 1, 1) || '**** ' || SUBSTR(u.last_name, 1, 1) || '********' AS client_initials
+    FROM Feedback f
+    INNER JOIN Products p ON f.product_id = p.id
+    INNER JOIN Users u ON f.client_id = u.id;
+  `;
+  
   db.all(query, [], (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
@@ -2263,6 +2274,34 @@ app.get('/feedback', (req, res) => {
     }
   });
 });
+
+
+// GET запрос для просмотра отзывов на конкретный товар с заменой product_id на название продукта и client_id на инициалы клиента
+app.get('/feedback/product/:product_id', (req, res) => {
+  const productId = req.params.product_id;
+  const query = `
+    SELECT 
+      f.id,
+      p.name AS product_name,
+      f.text,
+      f.rating,
+      SUBSTR(u.first_name, 1, 1) || '**** ' || SUBSTR(u.last_name, 1, 1) || '********' AS client_initials
+    FROM Feedback f
+    INNER JOIN Products p ON f.product_id = p.id
+    INNER JOIN Users u ON f.client_id = u.id
+    WHERE f.product_id = ?;
+  `;
+  
+  db.all(query, [productId], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.status(200).json(rows);
+    }
+  });
+});
+
+
 
 // POST запрос для добавления нового отзыва
 app.post('/feedback', (req, res) => {
