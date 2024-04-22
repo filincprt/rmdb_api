@@ -2268,12 +2268,14 @@ app.get('/feedback', (req, res) => {
   
   db.all(query, [], (err, rows) => {
     if (err) {
+      console.error('Error executing feedback query:', err);
       res.status(500).json({ error: err.message });
     } else {
       res.status(200).json(rows);
     }
   });
 });
+
 
 
 // GET запрос для просмотра отзывов на конкретный товар с заменой product_id на название продукта и client_id на инициалы клиента
