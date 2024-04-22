@@ -2250,6 +2250,59 @@ app.put('/couriers/:courierId/acceptOrder/:orderId', (req, res) => {
     });
 });
 
+//--------------------------------Feedback--------------------------
+
+// GET запрос для получения всех отзывов
+app.get('/feedback', (req, res) => {
+  const query = "SELECT * FROM Feedback;";
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.status(200).json(rows);
+    }
+  });
+});
+
+// POST запрос для добавления нового отзыва
+app.post('/feedback', (req, res) => {
+  const { product_id, text, rating, client_id } = req.body;
+  const query = "INSERT INTO Feedback (product_id, text, rating, client_id) VALUES (?, ?, ?, ?);";
+  db.run(query, [product_id, text, rating, client_id], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.status(201).json({ message: "Отзыв успешно добавлен", feedback_id: this.lastID });
+    }
+  });
+});
+
+// PUT запрос для обновления существующего отзыва
+app.put('/feedback/:id', (req, res) => {
+  const feedbackId = req.params.id;
+  const { text, rating } = req.body;
+  const query = "UPDATE Feedback SET text = ?, rating = ? WHERE id = ?;";
+  db.run(query, [text, rating, feedbackId], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.status(200).json({ message: `Отзыв с ID ${feedbackId} успешно обновлен` });
+    }
+  });
+});
+
+// DELETE запрос для удаления отзыва
+app.delete('/feedback/:id', (req, res) => {
+  const feedbackId = req.params.id;
+  const query = "DELETE FROM Feedback WHERE id = ?;";
+  db.run(query, [feedbackId], function(err) {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.status(200).json({ message: `Отзыв с ID ${feedbackId} успешно удален` });
+    }
+  });
+});
 
 //----------------------------------Status----------------------------
 
