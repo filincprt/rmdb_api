@@ -2252,7 +2252,7 @@ app.put('/couriers/:courierId/acceptOrder/:orderId', (req, res) => {
 
 //--------------------------------Feedback--------------------------
 
-// GET запрос для получения всех отзывов с заменой product_id на название продукта и client_id на инициалы клиента
+// GET запрос для получения всех отзывов с именем продукта и именем клиента
 app.get('/feedback', (req, res) => {
   const query = `
     SELECT 
@@ -2260,10 +2260,14 @@ app.get('/feedback', (req, res) => {
       Products.name AS product_name,
       Feedback.text,
       Feedback.rating,
-      (SUBSTR(Users.first_name, 1, 1) || '***** ' || SUBSTR(Users.last_name, 1, 1) || '*****') AS client_initials
-    FROM Feedback
-    JOIN Products ON Feedback.product_id = Products.id
-    JOIN Users ON Feedback.client_id = Users.id;
+      Users.first_name,
+      Users.last_name
+    FROM 
+      Feedback
+    INNER JOIN 
+      Products ON Feedback.product_id = Products.id
+    INNER JOIN 
+      Users ON Feedback.client_id = Users.id;
   `;
   
   db.all(query, [], (err, rows) => {
@@ -2274,7 +2278,6 @@ app.get('/feedback', (req, res) => {
     }
   });
 });
-
 
 
 // GET запрос для просмотра отзывов на конкретный товар с заменой product_id на название продукта и client_id на инициалы клиента
