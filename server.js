@@ -2256,7 +2256,7 @@ app.get('/feedback', (req, res) => {
   const query = `
     SELECT 
       Feedback.id,
-      Products.name AS product_name,
+      Products.name AS name,
       Feedback.text,
       Feedback.rating,
       Users.first_name,
