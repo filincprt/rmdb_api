@@ -1731,40 +1731,52 @@ app.post('/orders', (req, res) => {
     };
 
     // Добавление заказа в таблицу Orders
-    const addOrder = (orderNumber, courierId, qrSuccess, deliveryTime) => {
-        const status_id = 1; // Присваиваем значение 1 переменной status_id
-         const created_time = `${new Date().getDate()}:${new Date().getMonth() + 1}:${new Date().getFullYear()}`;
+    const formattedDeliveryTime = formatDate(deliveryTime);
 
-        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time, qr_success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        db.run(queryOrder, [user_id, orderNumber, deliveryTime.toISOString(), status_id, address, courierId, user_comment, created_time, qrSuccess], function (err) {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
+const addOrder = (orderNumber, courierId, qrSuccess, deliveryTime) => {
+    const status_id = 1;
+    const created_time = formatDate(new Date()); // Текущее время в формате "DD:MM:YYYY"
 
-            const orderId = this.lastID;
-            const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
-            const promises = products.map(({ product_id, quantity }) => {
-                return new Promise((resolve, reject) => {
-                    db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
-                        if (err) {
-                            reject(err.message);
-                            return;
-                        }
-                        resolve();
-                    });
+    const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time, qr_success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    db.run(queryOrder, [user_id, orderNumber, formattedDeliveryTime, status_id, address, courierId, user_comment, created_time, qrSuccess], function (err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        const orderId = this.lastID;
+        const queryOrderLine = 'INSERT INTO Order_Lines (order_id, product_id, quantity) VALUES (?, ?, ?)';
+        const promises = products.map(({ product_id, quantity }) => {
+            return new Promise((resolve, reject) => {
+                db.run(queryOrderLine, [orderId, product_id, quantity], function (err) {
+                    if (err) {
+                        reject(err.message);
+                        return;
+                    }
+                    resolve();
                 });
             });
-
-            Promise.all(promises)
-                .then(() => {
-                    res.json({ id: orderId });
-                })
-                .catch((error) => {
-                    res.status(500).json({ error: error });
-                });
         });
-    };
+
+        Promise.all(promises)
+            .then(() => {
+                res.json({ id: orderId });
+            })
+            .catch((error) => {
+                res.status(500).json({ error: error });
+            });
+    });
+};
+
+// Функция форматирования даты в "DD:MM:YYYY"
+const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Месяц начинается с 0
+    const year = date.getFullYear();
+
+    return `${day}:${month}:${year}`;
+};
+
 
     // Выполнение последовательности операций
     checkProductAvailability()
