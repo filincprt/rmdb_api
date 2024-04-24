@@ -1733,7 +1733,7 @@ app.post('/orders', (req, res) => {
     // Добавление заказа в таблицу Orders
     const addOrder = (orderNumber, courierId, qrSuccess, deliveryTime) => {
         const status_id = 1; // Присваиваем значение 1 переменной status_id
-        const created_time = new Date(Date.now()).toISOString(); // Текущее время
+         const created_time = `${new Date().getDate()}:${new Date().getMonth() + 1}:${new Date().getFullYear()}`;
 
         const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time, qr_success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
         db.run(queryOrder, [user_id, orderNumber, deliveryTime.toISOString(), status_id, address, courierId, user_comment, created_time, qrSuccess], function (err) {
