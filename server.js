@@ -2615,10 +2615,32 @@ function cancelOrderAfterTwentyMinutes() {
 
 cancelOrderAfterTwentyMinutes();
 
-//---------------------------------TEST----------------------------------------
+//---------------------------------STATISTIC----------------------------------------
 
+app.get('/popular-products', (req, res) => {
+    const query = `
+        SELECT 
+            p.id AS product_id,
+            p.name AS product_name,
+            COUNT(ol.order_id) AS order_count
+        FROM 
+            Products p
+        JOIN 
+            Order_Lines ol ON p.id = ol.product_id
+        GROUP BY 
+            p.id, p.name
+        ORDER BY 
+            order_count DESC;
+    `;
 
-
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
 
 //---------------------------------------------------------------------------------
 
