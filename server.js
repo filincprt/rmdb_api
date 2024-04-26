@@ -1736,7 +1736,7 @@ app.post('/orders', (req, res) => {
          const created_time = `${('0' + new Date().getDate()).slice(-2)}.${('0' + (new Date().getMonth() + 1)).slice(-2)}.${new Date().getFullYear()}`;
      const formattedDeliveryTime = `${deliveryTime.getDate()}.${deliveryTime.getMonth() + 1}.${deliveryTime.getFullYear()}`;
 
-        const queryOrder = 'INSERT INTO Orders (user_id, order_number, deliveryTime.toISOString(), status_id, address, courier_id, user_comment, created_time, qr_success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time, qr_success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
         db.run(queryOrder, [user_id, orderNumber, formattedDeliveryTime, status_id, address, courierId, user_comment, created_time, qrSuccess], function (err) {
             if (err) {
                 res.status(500).json({ error: err.message });
