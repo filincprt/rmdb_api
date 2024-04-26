@@ -1713,7 +1713,7 @@ app.post('/orders', (req, res) => {
             const qrSuccess = generateRandomString(40); // Генерируем рандомную строку длиной 40 символов
 
             // Вычисляем время доставки с добавлением 5 часов
-            const deliveryTime = `${('0' + new Date().getDate()).slice(-2)}.${('0' + (new Date().getMonth() + 1)).slice(-2)}.${new Date().getFullYear()}`;
+            const deliveryTime = new Date();
             deliveryTime.setHours(deliveryTime.getHours() + 5);
 
             addOrder(nextOrderNumber, null, qrSuccess, deliveryTime); // Вызываем функцию добавления заказа с присваиванием курьера null и сгенерированной строкой
