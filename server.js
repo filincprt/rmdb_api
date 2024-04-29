@@ -1784,6 +1784,30 @@ app.post('/orders', (req, res) => {
         });
 });
 
+app.put('/updatePaidStatusOrder', (req, res) => {
+    const orderId = req.body.orderId;
+    const newStatusId = req.body.statusId;
+    const newPaidStatus = req.body.paidStatus;
+
+    // Подготавливаем SQL-запрос для обновления данных заказа
+    const sql = `
+        UPDATE orders
+        SET status_id = ?,
+            paid_status = ?
+        WHERE id = ?;
+    `;
+
+    // Выполняем SQL-запрос с передачей параметров
+    db.run(sql, [newStatusId, newPaidStatus, orderId], function(err) {
+        if (err) {
+            console.error('Error updating order:', err);
+            res.status(500).send('Error updating order');
+        } else {
+            console.log(`Order with ID ${orderId} successfully updated`);
+            res.status(200).send(`Order with ID ${orderId} successfully updated`);
+        }
+    });
+});
 
 
 // Редактирование данных в таблице Orders
