@@ -1572,6 +1572,7 @@ app.get('/orders/details', (req, res) => {
     db.all(`SELECT Orders.id, Users.first_name || ' ' || Users.last_name AS user_name,
                    Orders.order_number,
                    Orders.delivery_time,
+                   Users.num_phone,
                    Orders.address,
                    Orders.reason_of_refusal,
                    Orders.user_comment,
