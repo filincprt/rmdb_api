@@ -1668,7 +1668,7 @@ app.get('/orders/:id', (req, res) => {
 
 // Добавление данных в таблицу Orders
 app.post('/orders', (req, res) => {
-    const { user_id, products, address, user_comment } = req.body;
+    const { user_id, products, address, user_comment, payment_method_id } = req.body;
 
     // Проверяем наличие товаров и достаточное количество на складе для каждого продукта
     const checkProductAvailability = () => {
@@ -1732,12 +1732,20 @@ app.post('/orders', (req, res) => {
 
     // Добавление заказа в таблицу Orders
     const addOrder = (orderNumber, courierId, qrSuccess, deliveryTime) => {
-        const status_id = 1; // Присваиваем значение 1 переменной status_id
-         const created_time = `${('0' + new Date().getDate()).slice(-2)}.${('0' + (new Date().getMonth() + 1)).slice(-2)}.${new Date().getFullYear()}`;
-     const formattedDeliveryTime = `${deliveryTime.getDate()}.${deliveryTime.getMonth() + 1}.${deliveryTime.getFullYear()}`;
+        let status_id = 1; // По умолчанию присваиваем значение 1 переменной status_id
 
-        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time, qr_success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        db.run(queryOrder, [user_id, orderNumber, formattedDeliveryTime, status_id, address, courierId, user_comment, created_time, qrSuccess], function (err) {
+        // В зависимости от значения поля payment_method_id присваиваем соответствующий статус заказа
+        if (payment_method_id === 1) {
+            status_id = 1; // Если значение payment_method_id равно 1, то status_id должен быть 1
+        } else if (payment_method_id === 2) {
+            status_id = 6; // Если значение payment_method_id равно 2, то status_id должен быть 6
+        }
+
+        const created_time = `${('0' + new Date().getDate()).slice(-2)}.${('0' + (new Date().getMonth() + 1)).slice(-2)}.${new Date().getFullYear()}`;
+        const formattedDeliveryTime = `${deliveryTime.getDate()}.${deliveryTime.getMonth() + 1}.${deliveryTime.getFullYear()}`;
+
+        const queryOrder = 'INSERT INTO Orders (user_id, order_number, delivery_time, status_id, address, courier_id, user_comment, created_time, qr_success, payment_method_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        db.run(queryOrder, [user_id, orderNumber, formattedDeliveryTime, status_id, address, courierId, user_comment, created_time, qrSuccess, payment_method_id], function (err) {
             if (err) {
                 res.status(500).json({ error: err.message });
                 return;
@@ -1774,6 +1782,7 @@ app.post('/orders', (req, res) => {
             res.status(400).json({ error: error });
         });
 });
+
 
 
 // Редактирование данных в таблице Orders
