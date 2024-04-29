@@ -1628,6 +1628,7 @@ app.get('/orders/:id', (req, res) => {
     const id = req.params.id;
     db.get(`SELECT Orders.*, Users.first_name || " " || Users.last_name AS user_name,
                     Couriers.Id_number AS courier_id,
+                    Users.num_phone,
                     Couriers.first_name AS courier_first_name,
                     Couriers.last_name AS courier_last_name,
                     Orders.address,
