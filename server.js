@@ -1634,10 +1634,12 @@ app.get('/orders/:id', (req, res) => {
                     Orders.qr_success,
                     Orders.reason_of_refusal,
                     Couriers.courier_id,
+                    PaymentMethods.method_name AS payment_method_name,
                     Status.name AS status
             FROM Orders
             JOIN Users ON Orders.user_id = Users.id
             LEFT JOIN Status ON Orders.status_id = Status.id
+            LEFT JOIN PaymentMethods ON Orders.payment_method_id = PaymentMethods.id
             LEFT JOIN Couriers ON Orders.courier_id = Couriers.courier_id
             WHERE Orders.id = ?`, [id], (err, order) => {
         if (err) {
