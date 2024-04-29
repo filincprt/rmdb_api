@@ -217,7 +217,7 @@ app.get('/users/check', (req, res) => {
 
 // Получение данных из таблицы Users без пароля
 app.get('/users', (req, res) => {
-    db.all('SELECT id, email, delivery_address, first_name, last_name FROM Users', (err, rows) => {
+    db.all('SELECT id, email, delivery_address, first_name, last_name, num_phone FROM Users', (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -230,7 +230,7 @@ app.get('/users', (req, res) => {
 app.get('/users/:userId', (req, res) => {
     const userId = req.params.userId;
     
-    db.get('SELECT id, email, delivery_address, first_name, last_name FROM Users WHERE id = ?', [userId], (err, row) => {
+    db.get('SELECT id, email, delivery_address, first_name, last_name, num_phone FROM Users WHERE id = ?', [userId], (err, row) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -462,14 +462,14 @@ app.put('/users/:email', (req, res) => {
 
 // Обновление данных в таблице Users
 app.put('/user/:id', (req, res) => {
-  const { email, first_name, last_name, delivery_address } = req.body;
+  const { email, first_name, last_name, delivery_address, num_phone } = req.body;
   const userId = req.params.id;
   const query = `
       UPDATE Users
-      SET email = ?, first_name = ?, last_name = ?, delivery_address = ?
+      SET email = ?, first_name = ?, last_name = ?, delivery_address = ?, num_phone=?
       WHERE id = ?`;
 
-  db.run(query, [email, first_name, last_name, delivery_address, userId], function (err) {
+  db.run(query, [email, first_name, last_name, delivery_address, num_phone, userId], function (err) {
       if (err) {
        console.error(err);
           res.status(500).json({ error: err.message });
