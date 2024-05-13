@@ -1742,7 +1742,7 @@ app.post('/orders', (req, res) => {
         if (payment_method_id === 1) {
             status_id = 1; // Если значение payment_method_id равно 1, то status_id должен быть 1
         } else if (payment_method_id === 2) {
-            status_id = 6; // Если значение payment_method_id равно 2, то status_id должен быть 6
+            status_id = 1; // Если значение payment_method_id равно 2, то status_id должен быть 6
         }
 
         const created_time = `${('0' + new Date().getDate()).slice(-2)}.${('0' + (new Date().getMonth() + 1)).slice(-2)}.${new Date().getFullYear()}`;
