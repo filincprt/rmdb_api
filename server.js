@@ -1576,6 +1576,7 @@ app.get('/orders/details', (req, res) => {
                    Orders.address,
                    Orders.reason_of_refusal,
                    Orders.user_comment,
+                   PaymentMethods.method_name AS payment_method_name,
                    Couriers.courier_id,
                    Couriers.Id_number AS courier_id,
                    Couriers.first_name AS courier_first_name,
@@ -1584,6 +1585,7 @@ app.get('/orders/details', (req, res) => {
             FROM Orders
             JOIN Users ON Users.id = Orders.user_id
             LEFT JOIN Status ON Orders.status_id = Status.id
+            LEFT JOIN PaymentMethods ON Orders.payment_method_id = PaymentMethods.id
             LEFT JOIN Couriers ON Orders.courier_id = Couriers.courier_id
             GROUP BY Orders.id`, (err, orders) => {
         if (err) {
