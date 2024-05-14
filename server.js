@@ -1227,37 +1227,48 @@ app.delete('/products/:id', async (req, res) => {
 });
 
 
-app.put('/products/:productId/spend', (req, res) => {
-  const productId = req.params.productId;
-  const quantityToSpend = req.body.quantity;
+app.put('/products/:id/decreaseQuantity', (req, res) => {
+  const productId = req.params.id;
+  const { quantityToDecrease } = req.body;
 
-  // Проверяем, является ли количество списания положительным числом
-  if (quantityToSpend <= 0) {
-    return res.status(400).json({ error: 'Количество для списания должно быть положительным числом.' });
+  // Проверка наличия productId и quantityToDecrease в запросе
+  if (!productId || !quantityToDecrease) {
+    return res.status(400).json({ error: 'Необходимо указать id товара и количество для списания.' });
   }
 
-  // Проверяем, существует ли товар с данным ID
-  const getProductQuery = 'SELECT * FROM Products WHERE id = ?';
-  db.get(getProductQuery, [productId], (err, product) => {
+  // Получение текущего количества товара
+  const getProductQuery = 'SELECT quantity FROM Products WHERE id = ?';
+  db.get(getProductQuery, [productId], (err, row) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    if (!product) {
-      return res.status(404).json({ error: 'Товар с указанным ID не найден.' });
+
+    // Проверка, что товар с таким id существует
+    if (!row) {
+      return res.status(404).json({ error: 'Товар с указанным id не найден.' });
     }
 
-    // Проверяем, достаточно ли товара для списания
-    if (product.quantity < quantityToSpend) {
-      return res.status(400).json({ error: 'Недостаточно товара для списания.' });
+    const currentQuantity = row.quantity;
+
+    // Проверка наличия достаточного количества товара для списания
+    if (currentQuantity < quantityToDecrease) {
+      return res.status(400).json({ error: 'Недостаточное количество товара для списания.' });
     }
 
-    // Выполняем списание товара
-    const spendQuery = 'UPDATE Products SET quantity = quantity - ? WHERE id = ?';
-    db.run(spendQuery, [quantityToSpend, productId], (err) => {
+    // Выполнение операции списания товара
+    const newQuantity = currentQuantity - quantityToDecrease;
+    const updateProductQuery = 'UPDATE Products SET quantity = ? WHERE id = ?';
+    db.run(updateProductQuery, [newQuantity, productId], function(err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      return res.status(200).json({ message: 'Товар успешно списан.' });
+
+      // Проверка успешного выполнения операции обновления
+      if (this.changes === 0) {
+        return res.status(500).json({ error: 'Не удалось обновить количество товара.' });
+      }
+
+      return res.status(200).json({ message: 'Количество товара успешно обновлено.' });
     });
   });
 });
