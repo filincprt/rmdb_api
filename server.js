@@ -1624,7 +1624,7 @@ app.get('/clients', (req, res) => {
             u.delivery_address AS client_address,
             o.order_number AS order_number,
             s.name AS status_name,
-            GROUP_CONCAT(p.name || ', Количество: ' || ol.quantity) AS products,
+            GROUP_CONCAT(p.name || ', Количество: ' || ol.quantity, '; ') AS products,
             c.first_name || ' ' || c.last_name AS courier_name
         FROM
             Users u
@@ -1650,18 +1650,7 @@ app.get('/clients', (req, res) => {
         res.json(rows);
     });
 });
-        GROUP BY
-            o.order_number;
-    `;
 
-    db.all(sql, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json(rows);
-    });
-});
 
 
 //----------------------ORDERS-----------------------------
