@@ -1624,7 +1624,8 @@ app.get('/clients', (req, res) => {
             u.delivery_address AS client_address,
             o.order_number AS order_number,
             s.name AS status_name,
-            GROUP_CONCAT(p.name || ', Количество: ' || ol.quantity, '; ') AS products,
+            p.name AS product_name,
+            ol.quantity AS product_quantity,
             c.first_name || ' ' || c.last_name AS courier_name
         FROM
             Users u
@@ -1637,9 +1638,7 @@ app.get('/clients', (req, res) => {
         JOIN
             Status s ON o.status_id = s.id
         LEFT JOIN
-            Couriers c ON o.courier_id = c.courier_id
-        GROUP BY
-            o.order_number;
+            Couriers c ON o.courier_id = c.courier_id;
     `;
 
     db.all(sql, [], (err, rows) => {
@@ -1647,9 +1646,46 @@ app.get('/clients', (req, res) => {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json(rows);
+
+        // Создаем объект для хранения данных о клиентах и их заказах
+        const clients = {};
+
+        // Обрабатываем каждую строку результата запроса
+        rows.forEach(row => {
+            // Создаем уникальный ключ для каждого клиента на основе его идентификатора
+            const clientKey = `${row.client_first_name}_${row.client_last_name}_${row.client_phone}_${row.client_email}_${row.client_address}`;
+
+            // Если такой клиент уже существует, добавляем информацию о заказе к его данным
+            if (clients.hasOwnProperty(clientKey)) {
+                clients[clientKey].orders.push({
+                    order_number: row.order_number,
+                    status_name: row.status_name,
+                    products: `${row.product_name}, Количество: ${row.product_quantity}`
+                });
+            } else {
+                // Иначе создаем новую запись для клиента
+                clients[clientKey] = {
+                    client_first_name: row.client_first_name,
+                    client_last_name: row.client_last_name,
+                    client_phone: row.client_phone,
+                    client_email: row.client_email,
+                    client_address: row.client_address,
+                    orders: [{
+                        order_number: row.order_number,
+                        status_name: row.status_name,
+                        products: `${row.product_name}, Количество: ${row.product_quantity}`
+                    }]
+                };
+            }
+        });
+
+        // Преобразуем объект клиентов в массив для отправки ответа
+        const result = Object.values(clients);
+
+        res.json(result);
     });
 });
+
 
 
 
