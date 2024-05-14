@@ -1227,6 +1227,42 @@ app.delete('/products/:id', async (req, res) => {
 });
 
 
+app.put('/products/:productId/spend', (req, res) => {
+  const productId = req.params.productId;
+  const quantityToSpend = req.body.quantity;
+
+  // Проверяем, является ли количество списания положительным числом
+  if (quantityToSpend <= 0) {
+    return res.status(400).json({ error: 'Количество для списания должно быть положительным числом.' });
+  }
+
+  // Проверяем, существует ли товар с данным ID
+  const getProductQuery = 'SELECT * FROM Products WHERE id = ?';
+  db.get(getProductQuery, [productId], (err, product) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    if (!product) {
+      return res.status(404).json({ error: 'Товар с указанным ID не найден.' });
+    }
+
+    // Проверяем, достаточно ли товара для списания
+    if (product.quantity < quantityToSpend) {
+      return res.status(400).json({ error: 'Недостаточно товара для списания.' });
+    }
+
+    // Выполняем списание товара
+    const spendQuery = 'UPDATE Products SET quantity = quantity - ? WHERE id = ?';
+    db.run(spendQuery, [quantityToSpend, productId], (err) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      return res.status(200).json({ message: 'Товар успешно списан.' });
+    });
+  });
+});
+
+
 
 //-------------------------ProductShipments------------------------------
 
