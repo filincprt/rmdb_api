@@ -1624,8 +1624,8 @@ app.get('/clients', (req, res) => {
             u.delivery_address AS client_address,
             o.order_number AS order_number,
             s.name AS status_name,
-            p.name AS product_name,
-            ol.quantity AS product_quantity,
+            GROUP_CONCAT(p.name) AS product_names,
+            GROUP_CONCAT(ol.quantity) AS product_quantities,
             c.first_name || ' ' || c.last_name AS courier_name
         FROM
             Users u
@@ -1638,7 +1638,9 @@ app.get('/clients', (req, res) => {
         JOIN
             Status s ON o.status_id = s.id
         LEFT JOIN
-            Couriers c ON o.courier_id = c.courier_id;
+            Couriers c ON o.courier_id = c.courier_id
+        GROUP BY
+            o.order_number;
     `;
 
     db.all(sql, [], (err, rows) => {
@@ -1649,6 +1651,7 @@ app.get('/clients', (req, res) => {
         res.json(rows);
     });
 });
+
 
 //----------------------ORDERS-----------------------------
 
