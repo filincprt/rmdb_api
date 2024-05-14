@@ -1611,6 +1611,44 @@ app.post('/reports/totalsalesdayperiod', (req, res) => {
     });
 });
 
+//---------------------CLIENTS----------------------------
+
+// GET-метод для получения списка клиентов и их заказов
+app.get('/clients', (req, res) => {
+    const sql = `
+        SELECT 
+            u.first_name AS client_first_name,
+            u.last_name AS client_last_name,
+            u.num_phone AS client_phone,
+            u.email AS client_email,
+            u.delivery_address AS client_address,
+            o.order_number AS order_number,
+            s.name AS status_name,
+            p.name AS product_name,
+            ol.quantity AS product_quantity,
+            c.first_name || ' ' || c.last_name AS courier_name
+        FROM
+            Users u
+        JOIN
+            Orders o ON u.id = o.user_id
+        JOIN
+            Order_Lines ol ON o.id = ol.order_id
+        JOIN
+            Products p ON ol.product_id = p.id
+        JOIN
+            Status s ON o.status_id = s.id
+        LEFT JOIN
+            Couriers c ON o.courier_id = c.courier_id;
+    `;
+
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
 
 //----------------------ORDERS-----------------------------
 
