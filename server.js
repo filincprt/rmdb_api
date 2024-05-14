@@ -1053,7 +1053,7 @@ app.put('/couriers/:id/toggleStatus', (req, res) => {
 
 app.get('/products', (req, res) => {
     const query = `
-    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, PA.is_available as is_available, P.last_updated
+    SELECT P.id, P.name, P.price, P.color_primary, P.color_light, P.description, P.image_resource, P.quantity, P.units_id, P.barcode, P.category_id, C.nameCategory as category_name, U.name as unit_name, P.price * P.quantity AS total_price_all_position, PA.is_available as is_available, P.last_updated
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
     LEFT JOIN UnitsOfMeasurement U ON P.units_id = U.id
