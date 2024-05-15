@@ -1075,10 +1075,10 @@ app.get('/products/:barcode', (req, res) => {
     const barcode = req.params.barcode;
 
     const query = `
-    SELECT name, price, image_resource, quantity, barcode, C.nameCategory as category_name
-    FROM Products P
-    LEFT JOIN Category C ON P.category_id = C.id
-    WHERE barcode = ?
+        SELECT P.id, P.name, P.price, P.image_resource, P.quantity, P.barcode, C.nameCategory as category_name
+        FROM Products P
+        LEFT JOIN Category C ON P.category_id = C.id
+        WHERE P.barcode = ?
     `;
 
     db.get(query, [barcode], (err, row) => {
@@ -1088,13 +1088,14 @@ app.get('/products/:barcode', (req, res) => {
         }
 
         if (!row) {
-            res.status(404).json({ error: 'Товар не найден' });
+            res.status(404).json({ error: 'Product not found' });
             return;
         }
 
         res.json({ product: row });
     });
 });
+
 
 
 
