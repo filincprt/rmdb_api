@@ -1075,10 +1075,10 @@ app.get('/products/:barcode', (req, res) => {
     const barcode = req.params.barcode;
 
     const query = `
-    SELECT P.name, P.price, P.image_resource, P.quantity, P.barcode, C.nameCategory as category_name
+    SELECT name, price, image_resource, quantity, barcode, C.nameCategory as category_name
     FROM Products P
     LEFT JOIN Category C ON P.category_id = C.id
-    WHERE P.barcode = ?
+    WHERE barcode = ?
     `;
 
     db.get(query, [barcode], (err, row) => {
@@ -1095,6 +1095,7 @@ app.get('/products/:barcode', (req, res) => {
         res.json({ product: row });
     });
 });
+
 
 
 // Получение данных о товаре по его ID без image_data
