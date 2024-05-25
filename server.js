@@ -1280,10 +1280,9 @@ app.put('/products/:id/decreaseQuantity', (req, res) => {
 // GET all product shipments
 app.get('/product-shipments', (req, res) => {
     console.log('GET /product-shipments requested');
-    db.all(`SELECT ps.id, p.name AS product_name, ps.shipment_number, ps.quantity_received, ps.shipment_date, ps.expiry_date, s.name AS supplier_name
+    db.all(`SELECT ps.id, p.name AS product_name, ps.shipment_number, ps.quantity_received, ps.shipment_date, ps.expiry_date, ps.supplier_name
             FROM ProductShipments ps
-            INNER JOIN Products p ON ps.product_id = p.id
-            INNER JOIN Supplier s ON ps.supplier_id = s.id`, (err, rows) => {
+            INNER JOIN Products p ON ps.product_id = p.id`, (err, rows) => {
         if (err) {
             console.error(err.message);
             res.status(500).json({ error: 'Internal Server Error' });
@@ -1293,6 +1292,7 @@ app.get('/product-shipments', (req, res) => {
         }
     });
 });
+
 
 app.post('/product-shipments', (req, res) => {
     console.log('POST /product-shipments requested');
@@ -1304,15 +1304,15 @@ app.post('/product-shipments', (req, res) => {
     }
 
     // Извлекаем информацию о поставке
-    const { shipment_number, shipment_date, supplier_id } = shipment_info;
+    const { shipment_number, shipment_date, supplier_name } = shipment_info;
 
     // Используем транзакцию для вставки данных о каждом товаре
     db.serialize(() => {
         db.run('BEGIN TRANSACTION');
         products.forEach((product, index) => {
             const { product_id, quantity_received, expiry_date } = product;
-            const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id) VALUES (?, ?, ?, ?, ?, ?)';
-            db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_id], async function (err) {
+            const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_name) VALUES (?, ?, ?, ?, ?, ?)';
+            db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_name], async function (err) {
                 if (err) {
                     console.error(err.message);
                     res.status(500).json({ error: 'Internal Server Error' });
