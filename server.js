@@ -1304,40 +1304,54 @@ app.post('/product-shipments', (req, res) => {
     }
 
     // Извлекаем информацию о поставке
-    const { shipment_number, shipment_date, supplier_name } = shipment_info;
+    const { shipment_number, shipment_date, supplier_id } = shipment_info;
 
-    // Используем транзакцию для вставки данных о каждом товаре
-    db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
-        products.forEach((product, index) => {
-            const { product_id, quantity_received, expiry_date } = product;
-            const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_name) VALUES (?, ?, ?, ?, ?, ?)';
-            db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_name], async function (err) {
-                if (err) {
-                    console.error(err.message);
-                    res.status(500).json({ error: 'Internal Server Error' });
-                    return;
-                } else {
-                    console.log(`New product shipment added with ID ${this.lastID}`);
-                    // Если это последний товар, фиксируем транзакцию и возвращаем ответ
-                    if (index === products.length - 1) {
-                        try {
-                            // Обновляем количество товара в таблице Products
-                            await updateProductQuantities(products);
-                            db.run('COMMIT', (err) => {
-                                if (err) {
-                                    console.error(err.message);
-                                    res.status(500).json({ error: 'Internal Server Error' });
-                                } else {
-                                    res.json({ message: 'Product shipments added successfully' });
-                                }
-                            });
-                        } catch (error) {
-                            console.error(error);
-                            res.status(500).json({ error: 'Internal Server Error' });
+    // Получаем имя поставщика по его ID
+    db.get('SELECT name FROM Supplier WHERE id = ?', [supplier_id], (err, row) => {
+        if (err) {
+            console.error(err.message);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        if (!row) {
+            return res.status(404).json({ error: 'Supplier not found' });
+        }
+
+        const supplier_name = row.name;
+
+        // Используем транзакцию для вставки данных о каждом товаре
+        db.serialize(() => {
+            db.run('BEGIN TRANSACTION');
+            products.forEach((product, index) => {
+                const { product_id, quantity_received, expiry_date } = product;
+                const query = 'INSERT INTO ProductShipments (product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_name) VALUES (?, ?, ?, ?, ?, ?)';
+                db.run(query, [product_id, shipment_number, quantity_received, shipment_date, expiry_date, supplier_name], async function (err) {
+                    if (err) {
+                        console.error(err.message);
+                        res.status(500).json({ error: 'Internal Server Error' });
+                        return;
+                    } else {
+                        console.log(`New product shipment added with ID ${this.lastID}`);
+                        // Если это последний товар, фиксируем транзакцию и возвращаем ответ
+                        if (index === products.length - 1) {
+                            try {
+                                // Обновляем количество товара в таблице Products
+                                await updateProductQuantities(products);
+                                db.run('COMMIT', (err) => {
+                                    if (err) {
+                                        console.error(err.message);
+                                        res.status(500).json({ error: 'Internal Server Error' });
+                                    } else {
+                                        res.json({ message: 'Product shipments added successfully' });
+                                    }
+                                });
+                            } catch (error) {
+                                console.error(error);
+                                res.status(500).json({ error: 'Internal Server Error' });
+                            }
                         }
                     }
-                }
+                });
             });
         });
     });
