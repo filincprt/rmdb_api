@@ -2674,7 +2674,7 @@ app.delete('/products/decrement/:barcode', (req, res) => {
 
 //------------------------------AUTOFUNCTION----------------------------------------
 
-function checkAndAssignOrdersToCouriers() {
+ function checkAndAssignOrdersToCouriers() {
     const interval = setInterval(() => {
         // Запрос к базе данных для выбора свободных и активных курьеров
         console.log('Выполняется поиск свободных курьеров и назначение им заказов...');
@@ -2696,10 +2696,6 @@ function checkAndAssignOrdersToCouriers() {
                     SELECT id
                     FROM Orders
                     WHERE courier_id IS NULL
-                    UNION
-                    SELECT id
-                    FROM Orders
-                    WHERE courier_id = 5 AND status = 'Новый'
                 `;
 
                 db.all(ordersQuery, [], (err, orders) => {
